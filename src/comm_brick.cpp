@@ -35,9 +35,9 @@
 
 using namespace LAMMPS_NS;
 
-static constexpr double BUFFACTOR = 1.5;
-static constexpr int BUFMIN = 1024;
-static constexpr double BIG = 1.0e20;
+#define BUFFACTOR 1.5
+#define BUFMIN 1024
+#define BIG 1.0e20
 
 /* ---------------------------------------------------------------------- */
 

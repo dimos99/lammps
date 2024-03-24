@@ -57,6 +57,7 @@ class Grid3d : protected Pointers {
 
  protected:
   int me, nprocs;
+  int layout;           // not TILED or TILED, same as Comm class
   MPI_Comm gridcomm;    // communicator for this class
                         // usually world, but MSM calls with subset
 

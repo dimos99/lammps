@@ -42,15 +42,16 @@
 #include "random_park.h"
 #include "region.h"
 #include "update.h"
+#include <iostream>
 
 #include <cmath>
 #include <cstring>
-#include <exception>
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
 using MathConst::MY_2PI;
 
+#define MAXENERGYTEST 1.0e50
 enum { EXCHATOM, EXCHMOL };    // exchmode
 
 /* ---------------------------------------------------------------------- */
@@ -73,8 +74,6 @@ FixWidom::FixWidom(LAMMPS *lmp, int narg, char **arg) :
   restart_global = 1;
   time_depend = 1;
 
-  triclinic = domain->triclinic;
-
   // required args
 
   nevery = utils::inumeric(FLERR,arg[3],false,lmp);
@@ -82,6 +81,8 @@ FixWidom::FixWidom(LAMMPS *lmp, int narg, char **arg) :
   nwidom_type = utils::inumeric(FLERR,arg[5],false,lmp);
   seed = utils::inumeric(FLERR,arg[6],false,lmp);
   insertion_temperature = utils::numeric(FLERR,arg[7],false,lmp);
+  // index of insertion file
+  // insertion_file_index = utils::inumeric(FLERR,arg[8],false,lmp);
 
   if (nevery <= 0) error->all(FLERR,"Invalid fix widom every argument: {}", nevery);
   if (ninsertions < 0) error->all(FLERR,"Invalid fix widom insertions argument: {}", ninsertions);
@@ -113,6 +114,23 @@ FixWidom::FixWidom(LAMMPS *lmp, int narg, char **arg) :
     region_zlo = region->extent_zlo;
     region_zhi = region->extent_zhi;
 
+    // std::cout << "Does this work?" << std::endl;
+    // std::cout << "Region extents: " << region_xlo << " " << region_xhi << " " << region_ylo << " " << region_yhi << " " << region_zlo << " " << region_zhi << std::endl;
+
+    // if (triclinic) {
+    //   std::cout << "Triclinic domain" << std::endl;
+    //   if ((region_xlo < domain->boxlo_bound[0]) || (region_xhi > domain->boxhi_bound[0]) ||
+    //       (region_ylo < domain->boxlo_bound[1]) || (region_yhi > domain->boxhi_bound[1]) ||
+    //       (region_zlo < domain->boxlo_bound[2]) || (region_zhi > domain->boxhi_bound[2]))
+    //     error->all(FLERR,"Fix widom region {} extends outside simulation box", region->id);
+    // } else {
+    //   std::cout << "Orthogonal domain" << std::endl;
+    //   if ((region_xlo < domain->boxlo[0]) || (region_xhi > domain->boxhi[0]) ||
+    //       (region_ylo < domain->boxlo[1]) || (region_yhi > domain->boxhi[1]) ||
+    //       (region_zlo < domain->boxlo[2]) || (region_zhi > domain->boxhi[2]))
+    //     error->all(FLERR,"Fix widom region {} extends outside simulation box", region->id);
+    // }
+
     // estimate region volume using MC trials
 
     double coord[3];
@@ -130,6 +148,8 @@ FixWidom::FixWidom(LAMMPS *lmp, int narg, char **arg) :
       * (region_zhi - region_zlo);
 
     region_volume = max_region_volume * static_cast<double>(inside) / static_cast<double>(attempts);
+
+    // std::cout << "Region volume: " << region_volume << std::endl;
   }
 
   // error check and further setup for exchmode = EXCHMOL
@@ -173,7 +193,7 @@ FixWidom::FixWidom(LAMMPS *lmp, int narg, char **arg) :
 
 void FixWidom::options(int narg, char **arg)
 {
-  if (narg < 0) error->all(FLERR,"Illegal fix widom command");
+  // if (narg < 0) error->all(FLERR,"Illegal fix widom command");
 
   // defaults
 
@@ -189,6 +209,7 @@ void FixWidom::options(int narg, char **arg)
   charge_flag = false;
   full_flag = false;
   energy_intra = 0.0;
+  insertion_file_index = 0;
 
   int iarg = 0;
   while (iarg < narg) {
@@ -206,7 +227,8 @@ void FixWidom::options(int narg, char **arg)
     } else if (strcmp(arg[iarg],"region") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal fix widom command");
       region = domain->get_region_by_id(arg[iarg+1]);
-      if (!region) error->all(FLERR,"Region {} for fix widom does not exist",arg[iarg+1]);
+      if (!region)
+        error->all(FLERR,"Region {} for fix widom does not exist",arg[iarg+1]);
       idregion = utils::strdup(arg[iarg+1]);
       iarg += 2;
     } else if (strcmp(arg[iarg],"charge") == 0) {
@@ -221,6 +243,10 @@ void FixWidom::options(int narg, char **arg)
       if (iarg+2 > narg) error->all(FLERR,"Illegal fix widom command");
       energy_intra = utils::numeric(FLERR,arg[iarg+1],false,lmp);
       iarg += 2;
+    } else if (strcmp(arg[iarg],"file_index") == 0) {
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix widom command");
+      insertion_file_index = utils::inumeric(FLERR,arg[iarg+1],false,lmp);
+      iarg += 2;
     } else error->all(FLERR,"Illegal fix widom command");
   }
 }
@@ -229,6 +255,7 @@ void FixWidom::options(int narg, char **arg)
 
 FixWidom::~FixWidom()
 {
+  // std::cout << "In ~FixWidom" << std::endl;
   delete[] idregion;
   delete random_equal;
 
@@ -281,11 +308,6 @@ int FixWidom::setmask()
 
 void FixWidom::init()
 {
-  if (!atom->mass) error->all(FLERR, "Fix widom requires per atom type masses");
-  if (atom->rmass_flag && (comm->me == 0))
-    error->warning(FLERR, "Fix widom will use per atom type masses for velocity initialization");
-
-  triclinic = domain->triclinic;
 
   // set index and check validity of region
 
@@ -294,31 +316,7 @@ void FixWidom::init()
     if (!region) error->all(FLERR, "Region {} for fix widom does not exist", idregion);
   }
 
-  if (region) {
-    if (region->bboxflag == 0)
-      error->all(FLERR,"Fix gcmc region does not support a bounding box");
-    if (region->dynamic_check())
-      error->all(FLERR,"Fix gcmc region cannot be dynamic");
-
-    region_xlo = region->extent_xlo;
-    region_xhi = region->extent_xhi;
-    region_ylo = region->extent_ylo;
-    region_yhi = region->extent_yhi;
-    region_zlo = region->extent_zlo;
-    region_zhi = region->extent_zhi;
-
-    if (triclinic) {
-      if ((region_xlo < domain->boxlo_bound[0]) || (region_xhi > domain->boxhi_bound[0]) ||
-          (region_ylo < domain->boxlo_bound[1]) || (region_yhi > domain->boxhi_bound[1]) ||
-          (region_zlo < domain->boxlo_bound[2]) || (region_zhi > domain->boxhi_bound[2]))
-        error->all(FLERR,"Fix widom region {} extends outside simulation box", region->id);
-    } else {
-      if ((region_xlo < domain->boxlo[0]) || (region_xhi > domain->boxhi[0]) ||
-          (region_ylo < domain->boxlo[1]) || (region_yhi > domain->boxhi[1]) ||
-          (region_zlo < domain->boxlo[2]) || (region_zhi > domain->boxhi[2]))
-        error->all(FLERR,"Fix widom region {} extends outside simulation box", region->id);
-    }
-  }
+  triclinic = domain->triclinic;
 
   ave_widom_chemical_potential = 0.0;
 
@@ -463,6 +461,8 @@ void FixWidom::pre_exchange()
 {
   // just return if should not be called on this timestep
 
+  // std::cout << "In pre_exchange" << std::endl;
+
   if (next_reneighbor != update->ntimestep) return;
 
   ave_widom_chemical_potential = 0.0;
@@ -495,8 +495,10 @@ void FixWidom::pre_exchange()
     energy_stored = energy_full();
 
     if (exchmode == EXCHATOM) {
+      // std::cout << "Attempting FULL atomic insertion with full_flag" << std::endl;
       attempt_atomic_insertion_full();
     } else {
+      // std::cout << "Attempting FULL molecular insertion with full_flag" << std::endl;
       attempt_molecule_insertion_full();
     }
 
@@ -510,8 +512,10 @@ void FixWidom::pre_exchange()
   } else {
 
     if (exchmode == EXCHATOM) {
+      // std::cout << "Attempting atomic insertion" << std::endl;
       attempt_atomic_insertion();
     } else {
+      // std::cout << "Attempting molecular insertion" << std::endl;
       attempt_molecule_insertion();
     }
 
@@ -522,8 +526,17 @@ void FixWidom::pre_exchange()
 /* ----------------------------------------------------------------------
 ------------------------------------------------------------------------- */
 
+#include <fstream>
+
 void FixWidom::attempt_atomic_insertion()
 {
+
+  // filename will be insertions_<proc_id>.csv
+  
+  // std::cout << "In attempt_atomic_insertion. insertion_file_index: " << insertion_file_index << std::endl;
+  std::string filename = "insertions_" + std::to_string(insertion_file_index) + ".csv";
+  // std::cout << "Filename: " << filename << std::endl;
+  std::ofstream outfile(filename, std::ios::app); // Open the file in append mode
 
   double lamda[3];
   double coord[3];
@@ -590,8 +603,14 @@ void FixWidom::attempt_atomic_insertion()
       double inst_chem_pot = exp(-insertion_energy*beta);
       double incr_chem_pot = (inst_chem_pot - ave_widom_chemical_potential);
       ave_widom_chemical_potential += incr_chem_pot / (imove + 1);
+
+      // Write the accepted insertion to the file
+      outfile << coord[0] << "," << coord[1] << "," << coord[2] << "," << inst_chem_pot << "\n";
+      // std::cout << "Accepted insertion at: " << coord[0] << " " << coord[1] << " " << coord[2] << " with incr_chem_pot: " << incr_chem_pot << std::endl;
     }
   }
+
+  outfile.close(); // Close the file
 }
 
 /* ----------------------------------------------------------------------
@@ -723,7 +742,9 @@ void FixWidom::attempt_molecule_insertion()
 
 void FixWidom::attempt_atomic_insertion_full()
 {
-
+  // filename will be insertions_<proc_id>.csv
+  std::string filename = "insertions_" + std::to_string(insertion_file_index) + ".csv";
+  std::ofstream outfile(filename, std::ios::app); // Open the file in append mode
   double lamda[3];
   double coord[3];
 
@@ -811,6 +832,12 @@ void FixWidom::attempt_atomic_insertion_full()
     if (proc_flag) atom->nlocal--;
     if (force->kspace) force->kspace->qsum_qsq();
     if (force->pair->tail_flag) force->pair->reinit();
+
+    // Write the accepted insertion to the file. Take care of the MPI multiple writes
+
+    outfile << coord[0] << "," << coord[1] << "," << coord[2] << "," << inst_chem_pot << "\n";
+    
+    // std::cout << 'I am here!!!' << std::endl;
   }
 }
 

@@ -1,3 +1,4 @@
+
 // clang-format off
 /* ----------------------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -39,10 +40,22 @@
 using namespace LAMMPS_NS;
 using namespace MathConst;
 
-enum { REVERSE_RHO_GPU, REVERSE_RHO };
-enum { FORWARD_IK, FORWARD_AD, FORWARD_IK_PERATOM, FORWARD_AD_PERATOM };
+#define MAXORDER 7
+#define OFFSET 16384
+#define SMALL 0.00001
+#define LARGE 10000.0
+#define EPS_HOC 1.0e-7
 
-static constexpr FFT_SCALAR ZEROF = 0.0;
+enum{REVERSE_RHO_GPU,REVERSE_RHO};
+enum{FORWARD_IK,FORWARD_AD,FORWARD_IK_PERATOM,FORWARD_AD_PERATOM};
+
+#ifdef FFT_SINGLE
+#define ZEROF 0.0f
+#define ONEF  1.0f
+#else
+#define ZEROF 0.0
+#define ONEF  1.0
+#endif
 
 // external functions from cuda library for atom decomposition
 
@@ -392,8 +405,7 @@ void PPPMGPU::poisson_ik()
 
   // if requested, compute energy and virial contribution
 
-  bigint ngridtotal = (bigint) nx_pppm * ny_pppm * nz_pppm;
-  double scaleinv = 1.0 / ngridtotal;
+  double scaleinv = 1.0/(nx_pppm*ny_pppm*nz_pppm);
   double s2 = scaleinv*scaleinv;
 
   if (eflag_global || vflag_global) {

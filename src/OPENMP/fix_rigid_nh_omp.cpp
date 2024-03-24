@@ -30,6 +30,7 @@
 #include "kspace.h"
 #include "math_const.h"
 #include "math_extra.h"
+#include "modify.h"
 #include "rigid_const.h"
 #include "update.h"
 
@@ -210,31 +211,16 @@ void FixRigidNHOMP::initial_integrate(int vflag)
   // set coords/orient and velocity/rotation of atoms in rigid bodies
   // from quarternion and omega
 
-  if (domain->dimension == 2) {
-    if (triclinic) {
-      if (evflag)
-        set_xv_thr<1,1,2>();
-      else
-        set_xv_thr<1,0,2>();
-    }  else {
-      if (evflag)
-        set_xv_thr<0,1,2>();
-      else
-        set_xv_thr<0,0,2>();
-    }
-  } else {
-    if (triclinic) {
-      if (evflag)
-        set_xv_thr<1,1,3>();
-      else
-        set_xv_thr<1,0,3>();
-    } else {
-      if (evflag)
-        set_xv_thr<0,1,3>();
-      else
-        set_xv_thr<0,0,3>();
-    }
-  }
+  if (triclinic)
+    if (evflag)
+      set_xv_thr<1,1>();
+    else
+      set_xv_thr<1,0>();
+  else
+    if (evflag)
+      set_xv_thr<0,1>();
+    else
+      set_xv_thr<0,0>();
 
   // remap simulation box by full step
   // redo KSpace coeffs since volume has changed
@@ -337,13 +323,11 @@ void FixRigidNHOMP::compute_forces_and_torques()
      // a few atoms each. so we loop over all atoms for all threads
      // and then each thread only processes some bodies.
 
+     const int nthreads=comm->nthreads;
      memset(&sum[0][0],0,6*nbody*sizeof(double));
 
 #if defined(_OPENMP)
-     const int nthreads=comm->nthreads;
 #pragma omp parallel LMP_DEFAULT_NONE
-#else
-     const int nthreads=1;
 #endif
      {
 #if defined(_OPENMP)
@@ -519,23 +503,13 @@ void FixRigidNHOMP::final_integrate()
   // virial is already setup from initial_integrate
   // triclinic only matters for virial calculation.
 
-  if (domain->dimension == 2) {
-    if (evflag)
-      if (triclinic)
-        set_v_thr<1,1,2>();
-      else
-        set_v_thr<0,1,2>();
+  if (evflag)
+    if (triclinic)
+      set_v_thr<1,1>();
     else
-      set_v_thr<0,0,2>();
-  } else {
-    if (evflag)
-      if (triclinic)
-        set_v_thr<1,1,3>();
-      else
-        set_v_thr<0,1,3>();
-    else
-      set_v_thr<0,0,3>();
-  }
+      set_v_thr<0,1>();
+  else
+    set_v_thr<0,0>();
 
   // compute current temperature
   if (tcomputeflag) t_current = temperature->compute_scalar();
@@ -584,7 +558,9 @@ void FixRigidNHOMP::remap()
         domain->x2lamda(x[i],x[i]);
   }
 
-  for (auto &ifix : rfix) ifix->deform(0);
+  if (nrigid)
+    for (int i = 0; i < nrigidfix; i++)
+      modify->fix[rfix[i]]->deform(0);
 
   // reset global and local box to new size/shape
 
@@ -614,7 +590,9 @@ void FixRigidNHOMP::remap()
         domain->lamda2x(x[i],x[i]);
   }
 
-  for (auto &ifix : rfix) ifix->deform(1);
+  if (nrigid)
+    for (int i = 0; i< nrigidfix; i++)
+      modify->fix[rfix[i]]->deform(1);
 }
 
 /* ----------------------------------------------------------------------
@@ -625,7 +603,7 @@ void FixRigidNHOMP::remap()
 
    NOTE: this needs to be kept in sync with FixRigidOMP
 ------------------------------------------------------------------------- */
-template <int TRICLINIC, int EVFLAG, int DIMENSION>
+template <int TRICLINIC, int EVFLAG>
 void FixRigidNHOMP::set_xv_thr()
 {
   auto * _noalias const x = (dbl3_t *) atom->x[0];
@@ -686,8 +664,6 @@ void FixRigidNHOMP::set_xv_thr()
     v[i].x = omegai.y*x[i].z - omegai.z*x[i].y + vcmi.x;
     v[i].y = omegai.z*x[i].x - omegai.x*x[i].z + vcmi.y;
     v[i].z = omegai.x*x[i].y - omegai.y*x[i].x + vcmi.z;
-
-    if (DIMENSION == 2) x[i].z = v[i].z = 0.0;
 
     // add center of mass to displacement
     // map back into periodic box via xbox,ybox,zbox
@@ -827,7 +803,7 @@ void FixRigidNHOMP::set_xv_thr()
 
    NOTE: this needs to be kept in sync with FixRigidOMP
 ------------------------------------------------------------------------- */
-template <int TRICLINIC, int EVFLAG, int DIMENSION>
+template <int TRICLINIC, int EVFLAG>
 void FixRigidNHOMP::set_v_thr()
 {
   auto * _noalias const x = (dbl3_t *) atom->x[0];
@@ -875,8 +851,6 @@ void FixRigidNHOMP::set_v_thr()
     v[i].x = omegai.y*delta[2] - omegai.z*delta[1] + vcmi.x;
     v[i].y = omegai.z*delta[0] - omegai.x*delta[2] + vcmi.y;
     v[i].z = omegai.x*delta[1] - omegai.y*delta[0] + vcmi.z;
-
-    if (DIMENSION == 2) v[i].z = 0.0;
 
     // virial = unwrapped coords dotted into body constraint force
     // body constraint force = implied force due to v change minus f external

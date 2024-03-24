@@ -24,7 +24,12 @@
 
 using namespace LAMMPS_NS;
 
-static constexpr int MAXLINE = 1024;        // max line length in dump file
+#define MAXLINE 1024        // max line length in dump file
+
+// also in read_dump.cpp
+
+enum{ID,TYPE,X,Y,Z,VX,VY,VZ,Q,IX,IY,IZ,FX,FY,FZ};
+enum{UNSET,NOSCALE_NOWRAP,NOSCALE_WRAP,SCALE_NOWRAP,SCALE_WRAP};
 
 /* ---------------------------------------------------------------------- */
 
@@ -289,7 +294,7 @@ bigint ReaderNative::read_header(double box[3][3], int &boxinfo, int &triclinic,
     labelline = line + strlen("ITEM: ATOMS ");
   }
 
-  Tokenizer tokens(std::move(labelline));
+  Tokenizer tokens(labelline);
   std::map<std::string, int> labels;
   nwords = 0;
 

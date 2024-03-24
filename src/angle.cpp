@@ -24,7 +24,7 @@
 using namespace LAMMPS_NS;
 using namespace MathConst;
 
-static constexpr double FOURTH = 0.25;
+#define FOURTH 0.25
 
 /* ---------------------------------------------------------------------- */
 

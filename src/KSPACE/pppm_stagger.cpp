@@ -33,12 +33,19 @@ using namespace LAMMPS_NS;
 using namespace MathConst;
 using namespace MathSpecial;
 
-static constexpr int OFFSET = 16384;
-static constexpr double EPS_HOC = 1.0e-7;
-static constexpr FFT_SCALAR ZEROF = 0.0;
+#define OFFSET 16384
+#define EPS_HOC 1.0e-7
 
-enum{ REVERSE_RHO };
-enum{ FORWARD_IK, FORWARD_AD, FORWARD_IK_PERATOM, FORWARD_AD_PERATOM };
+enum{REVERSE_RHO};
+enum{FORWARD_IK,FORWARD_AD,FORWARD_IK_PERATOM,FORWARD_AD_PERATOM};
+
+#ifdef FFT_SINGLE
+#define ZEROF 0.0f
+#define ONEF  1.0f
+#else
+#define ZEROF 0.0
+#define ONEF  1.0
+#endif
 
 /* ---------------------------------------------------------------------- */
 
@@ -295,7 +302,7 @@ double PPPMStagger::compute_qopt()
   // each proc calculates contributions from every Pth grid point
 
   bigint ngridtotal = (bigint) nx_pppm * ny_pppm * nz_pppm;
-  bigint nxy_pppm = (bigint) nx_pppm * ny_pppm;
+  int nxy_pppm = nx_pppm * ny_pppm;
 
   double qopt = 0.0;
 
@@ -391,7 +398,7 @@ double PPPMStagger::compute_qopt_ad()
   // each proc calculates contributions from every Pth grid point
 
   bigint ngridtotal = (bigint) nx_pppm * ny_pppm * nz_pppm;
-  bigint nxy_pppm = (bigint) nx_pppm * ny_pppm;
+  int nxy_pppm = nx_pppm * ny_pppm;
 
   double qopt = 0.0;
 

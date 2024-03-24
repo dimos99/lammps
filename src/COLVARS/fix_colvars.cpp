@@ -40,6 +40,8 @@
 
 #include <cstring>
 #include <iostream>
+#include <memory>
+#include <vector>
 
 #include "colvarproxy_lammps.h"
 #include "colvarmodule.h"

@@ -33,7 +33,6 @@
 #include <cerrno>
 #include <cstring>
 #include <ctime>
-#include <stdexcept>
 
 /*! \file utils.cpp */
 
@@ -396,24 +395,7 @@ double utils::numeric(const char *file, int line, const std::string &str, bool d
       lmp->error->all(file, line, msg);
   }
 
-  double rv = 0;
-  try {
-    rv = stod(buf);
-  } catch (std::invalid_argument const &) {
-    auto msg = fmt::format("Floating point number {} in input script or data file is invalid", buf);
-    if (do_abort)
-      lmp->error->one(file, line, msg);
-    else
-      lmp->error->all(file, line, msg);
-  } catch (std::out_of_range const &) {
-    auto msg =
-        fmt::format("Floating point number {} in input script or data file is out of range", buf);
-    if (do_abort)
-      lmp->error->one(file, line, msg);
-    else
-      lmp->error->all(file, line, msg);
-  }
-  return rv;
+  return atof(buf.c_str());
 }
 
 /* ----------------------------------------------------------------------
@@ -457,17 +439,7 @@ int utils::inumeric(const char *file, int line, const std::string &str, bool do_
       lmp->error->all(file, line, msg);
   }
 
-  int rv = 0;
-  try {
-    rv = stoi(buf);
-  } catch (std::out_of_range const &) {
-    auto msg = fmt::format("Integer {} in input script or data file is out of range", buf);
-    if (do_abort)
-      lmp->error->one(file, line, msg);
-    else
-      lmp->error->all(file, line, msg);
-  }
-  return rv;
+  return atoi(buf.c_str());
 }
 
 /* ----------------------------------------------------------------------
@@ -512,18 +484,7 @@ bigint utils::bnumeric(const char *file, int line, const std::string &str, bool 
       lmp->error->all(file, line, msg);
   }
 
-  long long rv = 0;
-  try {
-    rv = stoll(buf);
-    if (rv > MAXBIGINT) throw std::out_of_range("64-bit");
-  } catch (std::out_of_range const &) {
-    auto msg = fmt::format("Integer {} in input script or data file is out of range", buf);
-    if (do_abort)
-      lmp->error->one(file, line, msg);
-    else
-      lmp->error->all(file, line, msg);
-  }
-  return static_cast<bigint>(rv);
+  return ATOBIGINT(buf.c_str());
 }
 
 /* ----------------------------------------------------------------------
@@ -568,18 +529,7 @@ tagint utils::tnumeric(const char *file, int line, const std::string &str, bool 
       lmp->error->all(file, line, msg);
   }
 
-  long long rv = 0;
-  try {
-    rv = stoll(buf);
-    if (rv > MAXTAGINT) throw std::out_of_range("64-bit");
-  } catch (std::out_of_range const &) {
-    auto msg = fmt::format("Integer {} in input script or data file is out of range", buf);
-    if (do_abort)
-      lmp->error->one(file, line, msg);
-    else
-      lmp->error->all(file, line, msg);
-  }
-  return static_cast<tagint>(rv);
+  return ATOTAGINT(buf.c_str());
 }
 
 /* ----------------------------------------------------------------------
@@ -607,7 +557,7 @@ void utils::bounds(const char *file, int line, const std::string &str,
   // check for illegal charcters
   size_t found = str.find_first_not_of("*-0123456789");
   if (found != std::string::npos) {
-    if (error) error->all(file, line, "Invalid range string: {}", str);
+    if (error) error->all(file, line, fmt::format("Invalid range string: {}", str));
     return;
   }
 
@@ -630,14 +580,17 @@ void utils::bounds(const char *file, int line, const std::string &str,
 
   if (error) {
     if ((nlo <= 0) || (nhi <= 0))
-      error->all(file, line, "Invalid range string: {}", str);
+      error->all(file, line, fmt::format("Invalid range string: {}", str));
 
     if (nlo < nmin)
-      error->all(file, line, "Numeric index {} is out of bounds ({}-{})", nlo, nmin, nmax);
+      error->all(file, line, fmt::format("Numeric index {} is out of bounds ({}-{})",
+                                         nlo, nmin, nmax));
     else if (nhi > nmax)
-      error->all(file, line, "Numeric index {} is out of bounds ({}-{})", nhi, nmin, nmax);
+      error->all(file, line, fmt::format("Numeric index {} is out of bounds ({}-{})",
+                                         nhi, nmin, nmax));
     else if (nlo > nhi)
-      error->all(file, line, "Numeric index {} is out of bounds ({}-{})", nlo, nmin, nhi);
+      error->all(file, line, fmt::format("Numeric index {} is out of bounds ({}-{})",
+                                         nlo, nmin, nhi));
   }
 }
 

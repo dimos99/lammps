@@ -287,21 +287,21 @@ void FixNVEManifoldRattle::update_var_params()
 
 /* -----------------------------------------------------------------------------
    ---------------------------------------------------------------------------*/
-bigint FixNVEManifoldRattle::dof(int /*igroup*/)
+int FixNVEManifoldRattle::dof(int /*igroup*/)
 {
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
-  bigint natoms = 0;
+  int natoms = 0;
   for (int i = 0; i < nlocal; ++i) {
     if (mask[i] & groupbit) ++natoms;
   }
 
-  bigint dofs;
-  MPI_Allreduce( &natoms, &dofs, 1, MPI_LMP_BIGINT, MPI_SUM, world );
+  int dofs;
+  MPI_Allreduce( &natoms, &dofs, 1, MPI_INT, MPI_SUM, world );
 
   // Make sure that, if there is just no or one atom, no dofs are subtracted,
   // since for the first atom already 3 dofs are subtracted because of the
-  // center of mass corrections:
+  // centre of mass corrections:
   if (dofs <= 1) dofs = 0;
   stats.dofs_removed = dofs;
 

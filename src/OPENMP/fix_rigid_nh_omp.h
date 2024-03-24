@@ -24,14 +24,14 @@ class FixRigidNHOMP : public FixRigidNH {
 
   void initial_integrate(int) override;
   void final_integrate() override;
-  void remap() override;
+  virtual void remap();
 
  protected:
-  void compute_forces_and_torques() override;
+  virtual void compute_forces_and_torques();
 
  private:    // copied from FixRigidOMP
-  template <int, int, int> void set_xv_thr();
-  template <int, int, int> void set_v_thr();
+  template <int, int> void set_xv_thr();
+  template <int, int> void set_v_thr();
 };
 }    // namespace LAMMPS_NS
 

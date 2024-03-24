@@ -33,6 +33,8 @@
 
 using namespace LAMMPS_NS;
 
+#define MAXLINE 1024
+
 /* ---------------------------------------------------------------------- */
 
 PairEAM::PairEAM(LAMMPS *lmp) : Pair(lmp)

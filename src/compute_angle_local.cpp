@@ -31,7 +31,7 @@
 using namespace LAMMPS_NS;
 using namespace MathConst;
 
-static constexpr int DELTA = 10000;
+#define DELTA 10000
 
 enum{THETA,ENG,VARIABLE};
 

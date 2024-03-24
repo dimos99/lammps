@@ -41,6 +41,10 @@
 using namespace LAMMPS_NS;
 using namespace MathConst;
 
+// same as fix_wall.cpp
+
+enum{EDGE,CONSTANT,VARIABLE};
+
 /* ---------------------------------------------------------------------- */
 
 PairLubricatePoly::PairLubricatePoly(LAMMPS *lmp) : PairLubricate(lmp)
@@ -147,7 +151,7 @@ void PairLubricatePoly::compute(int eflag, int vflag)
          for (int m = 0; m < wallfix->nwall; m++) {
            int dim = wallfix->wallwhich[m] / 2;
            int side = wallfix->wallwhich[m] % 2;
-           if (wallfix->xstyle[m] == FixWall::VARIABLE) {
+           if (wallfix->xstyle[m] == VARIABLE) {
              wallcoord = input->variable->compute_equal(wallfix->xindex[m]);
            }
            else wallcoord = wallfix->coord0[m];
@@ -424,13 +428,12 @@ void PairLubricatePoly::compute(int eflag, int vflag)
 void PairLubricatePoly::init_style()
 {
   if (force->newton_pair == 1)
-    error->all(FLERR, "Pair lubricate/poly requires newton pair off");
+    error->all(FLERR,"Pair lubricate/poly requires newton pair off");
   if (comm->ghost_velocity == 0)
-    error->all(FLERR, "Pair lubricate/poly requires ghost atoms store velocity");
-  if (!atom->omega_flag)
-    error->all(FLERR, "Pair lubricate/poly requires atom attribute omega");
-  if (!atom->radius_flag)
-    error->all(FLERR, "Pair lubricate/poly requires atom attribute radius");
+    error->all(FLERR,
+               "Pair lubricate/poly requires ghost atoms store velocity");
+  if (!atom->sphere_flag)
+    error->all(FLERR,"Pair lubricate/poly requires atom style sphere");
 
   // ensure all particles are finite-size
   // for pair hybrid, should limit test to types using the pair style
@@ -440,7 +443,7 @@ void PairLubricatePoly::init_style()
 
   for (int i = 0; i < nlocal; i++)
     if (radius[i] == 0.0)
-      error->one(FLERR,"Pair lubricate/poly requires only extended particles");
+      error->one(FLERR,"Pair lubricate/poly requires extended particles");
 
   neighbor->add_request(this, NeighConst::REQ_FULL);
 
@@ -495,7 +498,7 @@ void PairLubricatePoly::init_style()
     for (int m = 0; m < wallfix->nwall; m++) {
       int dim = wallfix->wallwhich[m] / 2;
       int side = wallfix->wallwhich[m] % 2;
-      if (wallfix->xstyle[m] == FixWall::VARIABLE) {
+      if (wallfix->xstyle[m] == VARIABLE) {
         wallfix->xindex[m] = input->variable->find(wallfix->xstr[m]);
         //Since fix->wall->init happens after pair->init_style
         wallcoord = input->variable->compute_equal(wallfix->xindex[m]);

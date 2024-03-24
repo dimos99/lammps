@@ -182,7 +182,7 @@ class FixLbFluid : public Fix {
   void calc_fluidforceII(void);
   void calc_fluidforceweight(void);
 
-  bigint adjust_dof_fix();
+  int adjust_dof_fix();
   double dof_compute();
 
   /* nanopit parameters */

@@ -32,7 +32,8 @@ using namespace FixConst;
 /* ---------------------------------------------------------------------- */
 
 FixWallReflect::FixWallReflect(LAMMPS *lmp, int narg, char **arg) :
-  Fix(lmp, narg, arg), nwall(0), varflag(0)
+  Fix(lmp, narg, arg),
+  nwall(0)
 {
   if (narg < 4) utils::missing_cmd_args(FLERR, "fix wall/reflect", error);
 

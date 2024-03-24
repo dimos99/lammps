@@ -177,10 +177,7 @@ void *lammps_extract_compute(void *handle, const char *, int, int);
 void *lammps_extract_fix(void *handle, const char *, int, int, int, int);
 void *lammps_extract_variable(void *handle, const char *, const char *);
 int lammps_extract_variable_datatype(void *handle, const char *name);
-int lammps_set_variable(void *handle, const char *name, const char *str);
-int lammps_set_string_variable(void *handle, const char *name, const char *str);
-int lammps_set_internal_variable(void *handle, const char *name, double value);
-int lammps_variable_info(void *handle, int idx, char *buf, int bufsize);
+int lammps_set_variable(void *, char *, char *);
 
 /* ----------------------------------------------------------------------
  * Library functions for scatter/gather operations of data
@@ -201,11 +198,11 @@ void lammps_gather_impropers(void *handle, void *data);
 
 void lammps_gather(void *handle, const char *name, int type, int count, void *data);
 void lammps_gather_concat(void *handle, const char *name, int type, int count, void *data);
-void lammps_gather_subset(void *handle, const char *name, int type, int count, int ndata, int *ids,
-                          void *data);
+void lammps_gather_subset(void *handle, const char *name, int type, int count, int ndata,
+                          int *ids, void *data);
 void lammps_scatter(void *handle, const char *name, int type, int count, void *data);
-void lammps_scatter_subset(void *handle, const char *name, int type, int count, int ndata, int *ids,
-                           void *data);
+void lammps_scatter_subset(void *handle, const char *name, int type, int count, int ndata,
+                           int *ids, void *data);
 
 #if !defined(LAMMPS_BIGBIG)
 int lammps_create_atoms(void *handle, int n, const int *id, const int *type, const double *x,

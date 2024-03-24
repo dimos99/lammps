@@ -61,12 +61,13 @@ class FixWidom : public Fix {
   int natoms_per_molecule;    // number of atoms in each inserted molecule
   int nmaxmolatoms;           // number of atoms allocated for molecule arrays
 
-  double ave_widom_chemical_potential;
+  double ave_widom_chemical_potential; 
 
   int widom_nmax;
   int max_region_attempts;
   double gas_mass;
   double insertion_temperature;
+  int insertion_file_index;
   double beta, volume;
   double charge;
   double xlo, xhi, ylo, yhi, zlo, zhi;

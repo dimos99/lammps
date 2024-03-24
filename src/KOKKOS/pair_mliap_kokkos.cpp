@@ -1,7 +1,7 @@
 /* -*- c++ -*- ----------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    https://www.lammps.org/, Sandia National Laboratories
-   LAMMPS development team: developers@lammps.org
+   LAMMPS Development team: developers@lammps.org
 
    Copyright (2003) Sandia Corporation.  Under the terms of Contract
    DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains
@@ -138,7 +138,6 @@ template<class DeviceType>
 void PairMLIAPKokkos<DeviceType>::allocate()
 {
   int n = atom->ntypes;
-
   memoryKK->destroy_kokkos(k_map, map);
   memoryKK->destroy_kokkos(k_cutsq, cutsq);
   memoryKK->destroy_kokkos(k_setflag, setflag);
@@ -276,10 +275,7 @@ void PairMLIAPKokkos<DeviceType>::coeff(int narg, char **arg) {
   auto h_cutsq=k_cutsq.template view<LMPHostType>();
   for (int itype=1; itype <= atom->ntypes; ++itype)
     for (int jtype=1; jtype <= atom->ntypes; ++jtype)
-      // do not set cuts for NULL atoms
-      if (map[itype] >= 0 && map[jtype] >= 0) {
-        h_cutsq(itype,jtype) = descriptor->cutsq[map[itype]][map[jtype]];
-      }
+      h_cutsq(itype,jtype) = descriptor->cutsq[map[itype]][map[jtype]];
   k_cutsq.modify<LMPHostType>();
   k_cutsq.sync<DeviceType>();
   constexpr int gradgradflag = -1;
@@ -319,9 +315,9 @@ void PairMLIAPKokkos<DeviceType>::init_style()
 
   PairMLIAP::init_style();
   auto request = neighbor->find_request(this);
-  request->set_kokkos_host(std::is_same_v<DeviceType,LMPHostType> &&
-                           !std::is_same_v<DeviceType,LMPDeviceType>);
-  request->set_kokkos_device(std::is_same_v<DeviceType,LMPDeviceType>);
+  request->set_kokkos_host(std::is_same<DeviceType,LMPHostType>::value &&
+                           !std::is_same<DeviceType,LMPDeviceType>::value);
+  request->set_kokkos_device(std::is_same<DeviceType,LMPDeviceType>::value);
 }
 
 /* ---------------------------------------------------------------------- */

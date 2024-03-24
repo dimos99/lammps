@@ -32,7 +32,7 @@
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
-static constexpr int DELTA = 16;
+#define DELTA 16
 
 /* ---------------------------------------------------------------------- */
 

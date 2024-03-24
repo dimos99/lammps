@@ -40,7 +40,11 @@
 using namespace LAMMPS_NS;
 using namespace MathConst;
 
-static constexpr double TOL = 1e-4;   // tolerance for conjugate gradient
+#define TOL 1E-4   // tolerance for conjugate gradient
+
+// same as fix_wall.cpp
+
+enum{EDGE,CONSTANT,VARIABLE};
 
 /* ---------------------------------------------------------------------- */
 
@@ -591,7 +595,7 @@ void PairLubricateU::compute_Fh(double **x)
          for (int m = 0; m < wallfix->nwall; m++) {
            int dim = wallfix->wallwhich[m] / 2;
            int side = wallfix->wallwhich[m] % 2;
-           if (wallfix->xstyle[m] == FixWall::VARIABLE) {
+           if (wallfix->xstyle[m] == VARIABLE) {
              wallcoord = input->variable->compute_equal(wallfix->xindex[m]);
            }
            else wallcoord = wallfix->coord0[m];
@@ -823,7 +827,7 @@ void PairLubricateU::compute_RU()
          for (int m = 0; m < wallfix->nwall; m++) {
            int dim = wallfix->wallwhich[m] / 2;
            int side = wallfix->wallwhich[m] % 2;
-           if (wallfix->xstyle[m] == FixWall::VARIABLE) {
+           if (wallfix->xstyle[m] == VARIABLE) {
              wallcoord = input->variable->compute_equal(wallfix->xindex[m]);
            }
            else wallcoord = wallfix->coord0[m];
@@ -1094,7 +1098,7 @@ void PairLubricateU::compute_RU(double **x)
          for (int m = 0; m < wallfix->nwall; m++) {
            int dim = wallfix->wallwhich[m] / 2;
            int side = wallfix->wallwhich[m] % 2;
-           if (wallfix->xstyle[m] == FixWall::VARIABLE) {
+           if (wallfix->xstyle[m] == VARIABLE) {
              wallcoord = input->variable->compute_equal(wallfix->xindex[m]);
            }
            else wallcoord = wallfix->coord0[m];
@@ -1760,10 +1764,8 @@ void PairLubricateU::coeff(int narg, char **arg)
 
 void PairLubricateU::init_style()
 {
-  if (!atom->omega_flag)
-    error->all(FLERR,"Pair lubricateU requires atom attribute omega");
-  if (!atom->radius_flag)
-    error->all(FLERR,"Pair lubricateU requires atom attribute radius");
+  if (!atom->sphere_flag)
+    error->all(FLERR,"Pair lubricateU requires atom style sphere");
   if (comm->ghost_velocity == 0)
     error->all(FLERR,"Pair lubricateU requires ghost atoms store velocity");
 
@@ -1817,7 +1819,7 @@ void PairLubricateU::init_style()
     for (int m = 0; m < wallfix->nwall; m++) {
       int dim = wallfix->wallwhich[m] / 2;
       int side = wallfix->wallwhich[m] % 2;
-      if (wallfix->xstyle[m] == FixWall::VARIABLE) {
+      if (wallfix->xstyle[m] == VARIABLE) {
         wallfix->xindex[m] = input->variable->find(wallfix->xstr[m]);
         //Since fix->wall->init happens after pair->init_style
         wallcoord = input->variable->compute_equal(wallfix->xindex[m]);

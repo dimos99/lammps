@@ -31,6 +31,8 @@
 using namespace LAMMPS_NS;
 using namespace MathConst;
 
+#define SMALL 0.001
+
 /* ---------------------------------------------------------------------- */
 
 template<class DeviceType>

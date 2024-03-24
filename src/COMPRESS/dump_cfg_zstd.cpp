@@ -28,7 +28,7 @@
 #include <cstring>
 
 using namespace LAMMPS_NS;
-static constexpr double UNWRAPEXPAND = 10.0;
+#define UNWRAPEXPAND 10.0
 
 DumpCFGZstd::DumpCFGZstd(LAMMPS *lmp, int narg, char **arg) : DumpCFG(lmp, narg, arg)
 {

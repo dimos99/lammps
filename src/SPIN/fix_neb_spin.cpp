@@ -42,7 +42,7 @@ using namespace FixConst;
 
 enum{SINGLE_PROC_DIRECT,SINGLE_PROC_MAP,MULTI_PROC};
 
-static constexpr int BUFSIZE = 8;
+#define BUFSIZE 8
 
 /* ---------------------------------------------------------------------- */
 

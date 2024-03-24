@@ -26,7 +26,6 @@ class NeighRequest : protected Pointers {
   friend class NStencil;
   friend class NeighborKokkos;
   friend class NPairSkipIntel;
-  friend class NPairSkipTrimIntel;
   friend class FixIntel;
 
  protected:

@@ -34,8 +34,8 @@ using namespace LAMMPS_NS;
 using namespace FixConst;
 using namespace MathConst;
 
-static constexpr double BIG = 1.0e20;
-static constexpr int DELTA = 16;
+#define BIG 1.0e20
+#define DELTA 16
 
 /* ---------------------------------------------------------------------- */
 

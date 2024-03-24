@@ -27,7 +27,8 @@
 
 using namespace LAMMPS_NS;
 
-static constexpr double SMALL =     0.001;
+#define TOLERANCE 0.05
+#define SMALL     0.001
 
 /* ---------------------------------------------------------------------- */
 

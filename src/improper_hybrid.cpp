@@ -24,7 +24,7 @@
 
 using namespace LAMMPS_NS;
 
-static constexpr int EXTRA = 1000;
+#define EXTRA 1000
 
 /* ---------------------------------------------------------------------- */
 
@@ -269,8 +269,7 @@ void ImproperHybrid::coeff(int narg, char **arg)
     else if (strcmp(arg[1], "aa") == 0)
       error->all(FLERR, "AngleAngle coeff for hybrid improper has invalid format");
     else
-      error->all(FLERR, "Expected hybrid sub-style instead of {} in improper_coeff command",
-                 arg[1]);
+      error->all(FLERR, "Improper coeff for hybrid has invalid style");
   }
 
   // move 1st arg to 2nd arg

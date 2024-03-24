@@ -48,8 +48,9 @@ class FixRigid : public Fix {
 
   void setup_pre_neighbor() override;
   void pre_neighbor() override;
-  bigint dof(int) override;
+  int dof(int) override;
   void deform(int) override;
+  void enforce2d() override;
   void reset_dt() override;
   void zero_momentum() override;
   void zero_rotation() override;
@@ -60,6 +61,7 @@ class FixRigid : public Fix {
   double compute_array(int, int) override;
 
  protected:
+  int me, nprocs;
   double dtv, dtf, dtq;
   double *step_respa;
   int triclinic;
@@ -70,6 +72,7 @@ class FixRigid : public Fix {
   int setupflag;    // 1 if body properties are setup, else 0
   int earlyflag;    // 1 if forces/torques computed at post_force()
 
+  int dimension;    // # of dimensions
   int nbody;        // # of rigid bodies
   int nlinear;      // # of linear rigid bodies
   int *nrigid;      // # of atoms in each rigid body
@@ -143,8 +146,7 @@ class FixRigid : public Fix {
   void setup_bodies_static();
   void setup_bodies_dynamic();
   void apply_langevin_thermostat();
-  virtual void compute_forces_and_torques();
-  void enforce2d();
+  void compute_forces_and_torques();
   void readfile(int, double *, double **, double **, double **, imageint *, int *);
 };
 

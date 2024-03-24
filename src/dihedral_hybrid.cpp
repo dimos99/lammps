@@ -24,7 +24,7 @@
 
 using namespace LAMMPS_NS;
 
-static constexpr int EXTRA = 1000;
+#define EXTRA 1000
 
 /* ---------------------------------------------------------------------- */
 
@@ -277,8 +277,7 @@ void DihedralHybrid::coeff(int narg, char **arg)
     else if (strcmp(arg[1], "bb13") == 0)
       error->all(FLERR, "BondBond13 coeff for hybrid dihedral has invalid format");
     else
-      error->all(FLERR, "Expected hybrid sub-style instead of {} in dihedral_coeff command",
-                 arg[1]);
+      error->all(FLERR, "Dihedral coeff for hybrid has invalid style");
   }
 
   // move 1st arg to 2nd arg

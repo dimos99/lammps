@@ -25,7 +25,7 @@
 
 using namespace LAMMPS_NS;
 
-static constexpr double BIG = 1.0e30;
+#define BIG 1.0e30
 
 /* ---------------------------------------------------------------------- */
 

@@ -12,7 +12,6 @@
 ------------------------------------------------------------------------- */
 
 #include "npair_trim.h"
-
 #include "atom.h"
 #include "error.h"
 #include "my_page.h"
@@ -51,20 +50,16 @@ void NPairTrim::build(NeighList *list)
   int *numneigh_copy = listcopy->numneigh;
   int **firstneigh_copy = listcopy->firstneigh;
   int inum = listcopy->inum;
-  int gnum = listcopy->gnum;
 
   list->inum = inum;
-  list->gnum = gnum;
+  list->gnum = listcopy->gnum;
 
-  int inum_trim = inum;
-  if (list->ghost) inum_trim += gnum;
-
-  for (ii = 0; ii < inum_trim; ii++) {
+  for (ii = 0; ii < inum; ii++) {
     n = 0;
     neighptr = ipage->vget();
 
     const int i = ilist_copy[ii];
-    ilist[ii] = i;
+    ilist[i] = i;
     xtmp = x[i][0];
     ytmp = x[i][1];
     ztmp = x[i][2];

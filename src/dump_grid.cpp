@@ -2,7 +2,7 @@
 /* ----------------------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    https://www.lammps.org/, Sandia National Laboratories
-   LAMMPS development team: developers@lammps.org
+   LAMMPS Development team: developers@lammps.org
 
    Copyright (2003) Sandia Corporation.  Under the terms of Contract
    DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains
@@ -23,6 +23,7 @@
 #include "grid3d.h"
 #include "memory.h"
 #include "modify.h"
+#include "region.h"
 #include "update.h"
 
 #include <cstring>
@@ -34,8 +35,8 @@ using namespace LAMMPS_NS;
 
 enum {COMPUTE,FIX};
 
-static constexpr int ONEFIELD = 32;
-static constexpr int DELTA = 1048576;
+#define ONEFIELD 32
+#define DELTA 1048576
 
 /* ---------------------------------------------------------------------- */
 

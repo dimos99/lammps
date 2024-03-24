@@ -39,7 +39,7 @@ using namespace LAMMPS_NS;
 using namespace MathConst;
 using namespace LJSPICAParms;
 
-static constexpr double SMALL = 0.001;
+#define SMALL 0.001
 
 /* ---------------------------------------------------------------------- */
 

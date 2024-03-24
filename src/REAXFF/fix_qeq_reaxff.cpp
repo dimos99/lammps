@@ -141,7 +141,7 @@ FixQEqReaxFF::FixQEqReaxFF(LAMMPS *lmp, int narg, char **arg) :
   // perform initial allocation of atom-based arrays
   // register with Atom class
 
-  reaxff = dynamic_cast<PairReaxFF *>(force->pair_match("^reaxff",0));
+  reaxff = dynamic_cast<PairReaxFF *>(force->pair_match("^reax..",0));
 
   s_hist = t_hist = nullptr;
   atom->add_callback(Atom::GROW);
@@ -205,9 +205,10 @@ int FixQEqReaxFF::setmask()
 
 void FixQEqReaxFF::pertype_parameters(char *arg)
 {
-  if (utils::strmatch(arg,"^reaxff")) {
+  // match either new keyword "reaxff" or old keyword "reax/c"
+  if (utils::strmatch(arg,"^reax..$")) {
     reaxflag = 1;
-    Pair *pair = force->pair_match("^reaxff",0);
+    Pair *pair = force->pair_match("^reax..",0);
     if (!pair) error->all(FLERR,"No reaxff pair style for fix qeq/reaxff");
 
     int tmp;
@@ -217,8 +218,6 @@ void FixQEqReaxFF::pertype_parameters(char *arg)
     if (chi == nullptr || eta == nullptr || gamma == nullptr)
       error->all(FLERR, "Fix qeq/reaxff could not extract params from pair reaxff");
     return;
-  } else if (utils::strmatch(arg,"^reax/c")) {
-    error->all(FLERR, "Fix qeq/reaxff keyword 'reax/c' is obsolete; please use 'reaxff'");
   }
 
   reaxflag = 0;
@@ -698,8 +697,8 @@ void FixQEqReaxFF::compute_H()
   }
 
   if (m_fill >= H.m)
-    error->all(FLERR,"Fix qeq/reaxff H matrix size has been exceeded: m_fill={} H.m={}\n",
-               m_fill, H.m);
+    error->all(FLERR,fmt::format("Fix qeq/reaxff H matrix size has been "
+                                 "exceeded: m_fill={} H.m={}\n", m_fill, H.m));
 }
 
 /* ---------------------------------------------------------------------- */
@@ -773,8 +772,9 @@ int FixQEqReaxFF::CG(double *b, double *x)
   }
 
   if ((i >= imax) && maxwarn && (comm->me == 0))
-    error->warning(FLERR, "Fix qeq/reaxff CG convergence failed after {} iterations at step {}",
-                   i,update->ntimestep);
+    error->warning(FLERR,fmt::format("Fix qeq/reaxff CG convergence failed "
+                                     "after {} iterations at step {}",
+                                     i,update->ntimestep));
   return i;
 }
 

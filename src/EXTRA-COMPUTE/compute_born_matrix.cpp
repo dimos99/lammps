@@ -42,7 +42,8 @@
 
 using namespace LAMMPS_NS;
 
-static constexpr double SMALL = 1e-16;
+#define BIG 1000000000
+#define SMALL 1e-16
 
 // this table is used to pick the 3d rij vector indices used to
 // compute the 6 indices long Voigt stress vector

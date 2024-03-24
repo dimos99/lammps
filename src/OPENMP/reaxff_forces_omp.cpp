@@ -354,9 +354,6 @@ namespace ReaxFF {
       // Need to wait for all indices and tmp arrays accumulated.
 #if defined(_OPENMP)
 #pragma omp barrier
-      {
-        ;
-      }
 #endif
 
 #if defined(_OPENMP)

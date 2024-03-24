@@ -186,7 +186,8 @@ class Neighbor : protected Pointers {
 
   int must_check;       // 1 if must check other classes to reneigh
   int restart_check;    // 1 if restart enabled, 0 if no
-  std::vector<Fix *>fixchecklist;    // which fixes to check
+  int fix_check;        // # of fixes that induce reneigh
+  int *fixchecklist;    // which fixes to check
 
   double triggersq;    // trigger = build when atom moves this dist
 
@@ -301,9 +302,8 @@ namespace NeighConst {
     NS_ORTHO = 1 << 6,
     NS_TRI = 1 << 7,
     NS_GHOST = 1 << 8,
-    NS_INTEL = 1 << 9,
-    NS_SSA = 1 << 10,
-    NS_MULTI_OLD = 1 << 11
+    NS_SSA = 1 << 9,
+    NS_MULTI_OLD = 1 << 10
   };
 
   enum {

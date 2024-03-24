@@ -19,7 +19,6 @@
 #include "force.h"
 #include "memory.h"
 #include "neigh_list.h"
-#include "neighbor.h"
 
 #include <cmath>
 
@@ -201,18 +200,6 @@ void PairBPMSpring::coeff(int narg, char **arg)
   }
 
   if (count == 0) error->all(FLERR, "Incorrect args for pair coefficients");
-}
-
-/* ----------------------------------------------------------------------
-   init specific to this pair style
-------------------------------------------------------------------------- */
-
-void PairBPMSpring::init_style()
-{
-  if (comm->ghost_velocity == 0)
-    error->all(FLERR,"Pair bpm/spring requires ghost atoms store velocity");
-
-  neighbor->add_request(this);
 }
 
 /* ----------------------------------------------------------------------

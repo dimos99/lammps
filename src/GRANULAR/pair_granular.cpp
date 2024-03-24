@@ -37,6 +37,7 @@
 #include "update.h"
 
 #include <cstring>
+#include <vector>
 
 using namespace LAMMPS_NS;
 using namespace Granular_NS;
@@ -400,8 +401,8 @@ void PairGranular::init_style()
 {
   // error and warning checks
 
-  if (!atom->radius_flag || !atom->rmass_flag || !atom->omega_flag)
-    error->all(FLERR,"Pair granular requires atom attributes radius, rmass, omega");
+  if (!atom->radius_flag || !atom->rmass_flag)
+    error->all(FLERR,"Pair granular requires atom attributes radius, rmass");
   if (comm->ghost_velocity == 0)
     error->all(FLERR,"Pair granular requires ghost atoms store velocity");
 

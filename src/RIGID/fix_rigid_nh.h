@@ -50,8 +50,9 @@ class FixRigidNH : public FixRigid {
   double *f_eta_b;                      // thermo forces
   double akin_t, akin_r;                // translational/rotational kinetic energies
 
-  int kspace_flag;            // 1 if KSpace invoked, 0 if not
-  std::vector<Fix *> rfix;    // indices of rigid fixes
+  int kspace_flag;    // 1 if KSpace invoked, 0 if not
+  int nrigidfix;      // number of rigid fixes
+  int *rfix;          // indices of rigid fixes
 
   double vol0;          // reference volume
   double t0;            // reference temperature
@@ -69,7 +70,7 @@ class FixRigidNH : public FixRigid {
   int tcomputeflag, pcomputeflag;    // 1 = compute was created by fix. 0 = external
 
   void couple();
-  virtual void remap();
+  void remap();
   void nhc_temp_integrate();
   void nhc_press_integrate();
 

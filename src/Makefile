@@ -44,13 +44,11 @@ endif
 # PACKLIB    = all packages that require an additional lib
 #              should be PACKSYS + PACKINT + PACKEXT
 # PACKSYS    = subset that reqiure a common system library
-#              include LATBOLTZ b/c it requires a full MPI, not just STUBS
+#              include MPIIO and LB b/c require full MPI, not just STUBS
 # PACKINT    = subset that require an internal (provided) library
 # PACKEXT    = subset that require an external (downloaded) library
 
 PACKAGE = \
-	molecule \
-	kspace \
 	adios \
 	amoeba \
 	asphere \
@@ -87,6 +85,7 @@ PACKAGE = \
 	interlayer \
 	kim \
 	kokkos \
+	kspace \
 	latboltz \
 	lepton \
 	machdyn \
@@ -105,7 +104,10 @@ PACKAGE = \
 	ml-rann \
 	ml-snap \
 	mofff \
+	molecule \
 	molfile \
+	mpiio \
+	mscg \
 	netcdf \
 	openmp \
 	opt \
@@ -143,11 +145,9 @@ PACKAGE = \
 # NOTE: the last four packages must remain at the end since
 # they depend on other packages to be installed first.
 
-PACKBASIC = molecule kspace manybody rigid
+PACKBASIC = kspace manybody molecule rigid
 
 PACKMOST = \
-	kspace \
-	molecule \
 	amoeba \
 	asphere \
 	bocs \
@@ -175,6 +175,7 @@ PACKMOST = \
 	fep \
 	granular \
 	interlayer \
+	kspace \
 	manybody \
 	mc \
 	meam \
@@ -182,6 +183,7 @@ PACKMOST = \
 	misc \
 	ml-snap \
 	mofff \
+	molecule \
 	openmp \
 	opt \
 	orient \
@@ -211,6 +213,8 @@ PACKLIB = \
 	kim \
 	kokkos \
 	lepton \
+	mpiio \
+	mscg \
 	poems \
 	python \
 	voronoi \
@@ -235,7 +239,7 @@ PACKLIB = \
 	vtk \
 	electrode
 
-PACKSYS = compress latboltz python
+PACKSYS = compress latboltz mpiio python
 
 PACKINT = atc awpmd colvars electrode gpu kokkos lepton ml-pod poems
 
@@ -248,6 +252,7 @@ PACKEXT = \
 	ml-pace \
 	ml-quip \
 	molfile \
+	mscg \
 	netcdf \
 	plumed \
 	qmmm \
@@ -474,7 +479,7 @@ tar:
 	@cd STUBS; $(MAKE)
 	@echo "Created $(ROOT)_src.tar.gz"
 
-check: check-whitespace check-permissions check-homepage check-errordocs check-docs check-version
+check: check-whitespace check-permissions check-homepage check-errordocs check-version
 
 check-whitespace:
 	$(PYTHON) ../tools/coding_standard/whitespace.py ..
@@ -500,12 +505,8 @@ check-errordocs:
 fix-errordocs:
 	$(PYTHON) ../tools/coding_standard/errordocs.py .. -f
 
-check-docs:
-	$(MAKE) $(MFLAGS) -C ../doc anchor_check style_check package_check role_check
-
 check-version:
-	$(PYTHON) ../tools/coding_standard/versiontags.py .. || echo
-
+	$(PYTHON) ../tools/coding_standard/versiontags.py ..
 
 format-src:
 	clang-format -i --verbose --style=file *.cpp *.h */*.cpp */*.h

@@ -54,11 +54,8 @@
 
 using namespace LAMMPS_NS;
 
-static constexpr int DELTALINE = 256;
-static constexpr int DELTA = 4;
-
-// maximum nesting level of input files
-static constexpr int LMP_MAXFILE = 16;
+#define DELTALINE 256
+#define DELTA 4
 
 /* ----------------------------------------------------------------------
    one instance per command in style_command.h
@@ -102,11 +99,9 @@ function executed, and finally the class instance is deleted.
  * \param  argc  number of entries in *argv*
  * \param  argv  argument vector  */
 
-Input::Input(LAMMPS *lmp, int argc, char **argv) :
-    Pointers(lmp), variable(nullptr), labelstr(nullptr), infiles(nullptr), inlines(nullptr),
-    command_map(nullptr)
+Input::Input(LAMMPS *lmp, int argc, char **argv) : Pointers(lmp)
 {
-  MPI_Comm_rank(world, &me);
+  MPI_Comm_rank(world,&me);
 
   maxline = maxcopy = maxwork = 0;
   line = copy = work = nullptr;
@@ -117,15 +112,16 @@ Input::Input(LAMMPS *lmp, int argc, char **argv) :
   echo_log = 1;
 
   label_active = 0;
+  labelstr = nullptr;
   jump_skip = 0;
   utf8_warn = true;
 
   if (me == 0) {
     nfile = 1;
-    infiles = new FILE *[LMP_MAXFILE];
+    maxfile = 16;
+    infiles = new FILE *[maxfile];
     infiles[0] = infile;
-    inlines = new int[LMP_MAXFILE];
-  }
+  } else infiles = nullptr;
 
   variable = new Variable(lmp);
 
@@ -176,7 +172,6 @@ Input::~Input()
   delete[] labelstr;
   memory->sfree(arg);
   delete[] infiles;
-  delete[] inlines;
   delete variable;
 
   delete command_map;
@@ -195,7 +190,6 @@ of the file is reached.  The *infile* pointer will usually point to
 void Input::file()
 {
   int m,n,mstart,ntriple,endfile;
-  int nline = *output->thermo->get_line();
 
   while (true) {
 
@@ -251,19 +245,15 @@ void Input::file()
         m--;
         while (m >= 0 && isspace(line[m])) m--;
 
-        // continue reading if final printable char is "&", count line
+        // continue reading if final printable char is "&"
 
-        if (m >= 0 && line[m] == '&') {
-          ++nline;
-          continue;
-        }
+        if (m >= 0 && line[m] == '&') continue;
 
         // continue reading if odd number of triple quotes
 
         if (ntriple % 2) {
           line[m+1] = '\n';
           m += 2;
-          ++nline;
           continue;
         }
 
@@ -274,7 +264,6 @@ void Input::file()
         break;
       }
     }
-    output->thermo->set_line(++nline);
 
     // bcast the line
     // if n = 0, end-of-file
@@ -312,7 +301,6 @@ void Input::file()
 
     if (execute_command() && line)
       error->all(FLERR,"Unknown command: {}",line);
-    nline = *output->thermo->get_line();
   }
 }
 
@@ -339,14 +327,12 @@ void Input::file(const char *filename)
   // call to file() will close filename and decrement nfile
 
   if (me == 0) {
-    if (nfile == LMP_MAXFILE) error->one(FLERR,"Too many nested levels of input scripts");
+    if (nfile == maxfile) error->one(FLERR,"Too many nested levels of input scripts");
 
     if (filename) {
       infile = fopen(filename,"r");
       if (infile == nullptr)
         error->one(FLERR,"Cannot open input script {}: {}", filename, utils::getsyserror());
-      if (nfile > 0) inlines[nfile - 1] = *output->thermo->get_line();
-      inlines[nfile] = -1;
       infiles[nfile++] = infile;
     }
   }
@@ -360,7 +346,6 @@ void Input::file(const char *filename)
       fclose(infile);
       nfile--;
       infile = infiles[nfile-1];
-      output->thermo->set_line(inlines[nfile-1]);
     }
   }
 }
@@ -884,7 +869,6 @@ int Input::execute_command()
 void Input::clear()
 {
   if (narg > 0) error->all(FLERR,"Illegal clear command: unexpected arguments but found {}", narg);
-  output->thermo->set_line(-1);
   lmp->destroy();
   lmp->create();
   lmp->post_create();
@@ -1031,7 +1015,7 @@ void Input::include()
   if (narg != 1) error->all(FLERR,"Illegal include command");
 
   if (me == 0) {
-    if (nfile == LMP_MAXFILE)
+    if (nfile == maxfile)
       error->one(FLERR,"Too many nested levels of input scripts");
 
     // expand variables
@@ -1070,15 +1054,14 @@ void Input::jump()
   }
 
   if (me == 0) {
-    output->thermo->set_line(-1);
-    if (strcmp(arg[0],"SELF") == 0) {
-      rewind(infile);
-    } else {
+    if (strcmp(arg[0],"SELF") == 0) rewind(infile);
+    else {
       if (infile && infile != stdin) fclose(infile);
       infile = fopen(arg[0],"r");
       if (infile == nullptr)
-        error->one(FLERR,"Cannot open input script {}: {}", arg[0], utils::getsyserror());
-      inlines[nfile-1] = -1;
+        error->one(FLERR,"Cannot open input script {}: {}",
+                                     arg[0], utils::getsyserror());
+
       infiles[nfile-1] = infile;
     }
   }
@@ -1931,9 +1914,7 @@ void Input::thermo_modify()
 
 void Input::thermo_style()
 {
-  int nline = *output->thermo->get_line();
   output->create_thermo(narg,arg);
-  output->thermo->set_line(nline);
 }
 
 /* ---------------------------------------------------------------------- */

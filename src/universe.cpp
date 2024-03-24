@@ -21,7 +21,7 @@
 
 using namespace LAMMPS_NS;
 
-static constexpr int MAXLINE = 256;
+#define MAXLINE 256
 
 /* ----------------------------------------------------------------------
    create & initialize the universe of processors in communicator
@@ -69,7 +69,7 @@ Universe::~Universe()
 
 void Universe::reorder(char *style, char *arg)
 {
-  char line[MAXLINE] = {'\0'};
+  char line[MAXLINE];
 
   if (uworld != uorig) MPI_Comm_free(&uworld);
 

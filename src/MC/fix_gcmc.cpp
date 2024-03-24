@@ -45,7 +45,6 @@
 
 #include <cmath>
 #include <cstring>
-#include <exception>
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -53,14 +52,14 @@ using namespace MathConst;
 
 // large energy value used to signal overlap
 
-static constexpr double MAXENERGYSIGNAL = 1.0e100;
+#define MAXENERGYSIGNAL 1.0e100
 
 // this must be lower than MAXENERGYSIGNAL
 // by a large amount, so that it is still
 // less than total energy when negative
 // energy contributions are added to MAXENERGYSIGNAL
 
-static constexpr double MAXENERGYTEST = 1.0e50;
+#define MAXENERGYTEST 1.0e50
 
 enum { EXCHATOM, EXCHMOL };          // exchmode
 enum { NONE, MOVEATOM, MOVEMOL };    // movemode
@@ -90,7 +89,6 @@ FixGCMC::FixGCMC(LAMMPS *lmp, int narg, char **arg) :
 
   ngroups = 0;
   ngrouptypes = 0;
-  triclinic = domain->triclinic;
 
   // required args
 
@@ -125,7 +123,8 @@ FixGCMC::FixGCMC(LAMMPS *lmp, int narg, char **arg) :
 
   // error checks on region and its extent being inside simulation box
 
-  region_xlo = region_xhi = region_ylo = region_yhi = region_zlo = region_zhi = 0.0;
+  region_xlo = region_xhi = region_ylo = region_yhi =
+    region_zlo = region_zhi = 0.0;
   if (region) {
     if (region->bboxflag == 0)
       error->all(FLERR,"Fix gcmc region does not support a bounding box");
@@ -299,7 +298,8 @@ void FixGCMC::options(int narg, char **arg)
     } else if (strcmp(arg[iarg],"region") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal fix gcmc command");
       region = domain->get_region_by_id(arg[iarg+1]);
-      if (!region) error->all(FLERR,"Region {} for fix gcmc does not exist",arg[iarg+1]);
+      if (!region)
+        error->all(FLERR,"Region {} for fix gcmc does not exist",arg[iarg+1]);
       idregion = utils::strdup(arg[iarg+1]);
       iarg += 2;
     } else if (strcmp(arg[iarg],"maxangle") == 0) {
@@ -464,12 +464,6 @@ int FixGCMC::setmask()
 
 void FixGCMC::init()
 {
-  if (!atom->mass) error->all(FLERR, "Fix gcmc requires per atom type masses");
-  if (atom->rmass_flag && (comm->me == 0))
-    error->warning(FLERR, "Fix gcmc will use per atom type masses for velocity initialization");
-
-  triclinic = domain->triclinic;
-
   // set index and check validity of region
 
   if (idregion) {
@@ -477,31 +471,19 @@ void FixGCMC::init()
     if (!region) error->all(FLERR, "Region {} for fix gcmc does not exist", idregion);
   }
 
-  if (region) {
-    if (region->bboxflag == 0)
-      error->all(FLERR,"Fix gcmc region does not support a bounding box");
-    if (region->dynamic_check())
-      error->all(FLERR,"Fix gcmc region cannot be dynamic");
+  triclinic = domain->triclinic;
 
-    region_xlo = region->extent_xlo;
-    region_xhi = region->extent_xhi;
-    region_ylo = region->extent_ylo;
-    region_yhi = region->extent_yhi;
-    region_zlo = region->extent_zlo;
-    region_zhi = region->extent_zhi;
-
-    if (triclinic) {
-      if ((region_xlo < domain->boxlo_bound[0]) || (region_xhi > domain->boxhi_bound[0]) ||
-          (region_ylo < domain->boxlo_bound[1]) || (region_yhi > domain->boxhi_bound[1]) ||
-          (region_zlo < domain->boxlo_bound[2]) || (region_zhi > domain->boxhi_bound[2])) {
-        error->all(FLERR,"Fix gcmc region extends outside simulation box");
-      }
-    } else {
-      if ((region_xlo < domain->boxlo[0]) || (region_xhi > domain->boxhi[0]) ||
-          (region_ylo < domain->boxlo[1]) || (region_yhi > domain->boxhi[1]) ||
-          (region_zlo < domain->boxlo[2]) || (region_zhi > domain->boxhi[2]))
-        error->all(FLERR,"Fix gcmc region extends outside simulation box");
+  if (triclinic) {
+    if ((region_xlo < domain->boxlo_bound[0]) || (region_xhi > domain->boxhi_bound[0]) ||
+        (region_ylo < domain->boxlo_bound[1]) || (region_yhi > domain->boxhi_bound[1]) ||
+        (region_zlo < domain->boxlo_bound[2]) || (region_zhi > domain->boxhi_bound[2])) {
+      error->all(FLERR,"Fix gcmc region extends outside simulation box");
     }
+  } else {
+    if ((region_xlo < domain->boxlo[0]) || (region_xhi > domain->boxhi[0]) ||
+        (region_ylo < domain->boxlo[1]) || (region_yhi > domain->boxhi[1]) ||
+        (region_zlo < domain->boxlo[2]) || (region_zhi > domain->boxhi[2]))
+      error->all(FLERR,"Fix gcmc region extends outside simulation box");
   }
 
   // set probabilities for MC moves

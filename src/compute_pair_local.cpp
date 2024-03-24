@@ -28,7 +28,7 @@
 
 using namespace LAMMPS_NS;
 
-static constexpr int DELTA = 10000;
+#define DELTA 10000
 
 enum { DIST, ENG, FORCE, FX, FY, FZ, PN, DX, DY, DZ };
 enum { TYPE, RADIUS };

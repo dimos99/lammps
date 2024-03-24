@@ -24,7 +24,7 @@
 
 using namespace LAMMPS_NS;
 
-static constexpr int EXTRA = 1000;
+#define EXTRA 1000
 
 /* ---------------------------------------------------------------------- */
 
@@ -305,7 +305,7 @@ void BondHybrid::coeff(int narg, char **arg)
     if (strcmp(arg[1], "none") == 0)
       none = 1;
     else
-      error->all(FLERR, "Expected hybrid sub-style instead of {} in bond_coeff command", arg[1]);
+      error->all(FLERR, "Bond coeff for hybrid has invalid style");
   }
 
   // move 1st arg to 2nd arg

@@ -19,7 +19,11 @@
 #include "colvarmodule.h"
 #include "colvarproxy.h"
 
-#include <sstream>
+#include <sys/stat.h>
+#include <cerrno>
+#include <cstring>
+#include <iostream>
+#include <memory>
 
 #define HASH_FAIL  -1
 

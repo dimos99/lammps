@@ -31,13 +31,13 @@
 using namespace LAMMPS_NS;
 using namespace MathSpecial;
 
-static constexpr int MAXLINE = 1024;
-static constexpr int DELTA = 4;
+#define MAXLINE 1024
+#define DELTA 4
 
 #ifdef DBL_EPSILON
-static constexpr double MY_EPSILON = 10.0*DBL_EPSILON;
+  #define MY_EPSILON (10.0*DBL_EPSILON)
 #else
-static constexpr double MY_EPSILON = 10.0*2.220446049250313e-16;
+  #define MY_EPSILON (10.0*2.220446049250313e-16)
 #endif
 
 #define oneFluidApproxParameter (-1)
@@ -728,8 +728,7 @@ void PairExp6rx::read_file(char *file)
   // one set of params can span multiple lines
 
   int n,nwords,ispecies;
-  char line[MAXLINE] = {'\0'};
-  char *ptr;
+  char line[MAXLINE],*ptr;
   int eof = 0;
 
   while (true) {
@@ -836,8 +835,7 @@ void PairExp6rx::read_file2(char *file)
 
   // one set of params can span multiple lines
   int n,nwords;
-  char line[MAXLINE] = {'\0'};
-  char *ptr;
+  char line[MAXLINE],*ptr;
   int eof = 0;
 
   while (true) {

@@ -33,7 +33,8 @@
 using namespace LAMMPS_NS;
 using MathSpecial::powint;
 
-static constexpr int MAXLINE = 1024;
+#define MAXLINE 1024
+
 static constexpr double SMALL = 1.0e-10;
 
 FitPOD::FitPOD(LAMMPS *_lmp) : Command(_lmp), podptr(nullptr)
@@ -150,8 +151,7 @@ int FitPOD::read_data_file(double *fitting_weights, std::string &file_format,
 
   // loop through lines of training data file and parse keywords
 
-  char line[MAXLINE] = {'\0'};
-  char *ptr;
+  char line[MAXLINE],*ptr;
   int eof = 0;
   while (true) {
     if (comm->me == 0) {
@@ -177,7 +177,7 @@ int FitPOD::read_data_file(double *fitting_weights, std::string &file_format,
 
     if (words.size() == 0) continue;
 
-    const auto &keywd = words[0];
+    auto keywd = words[0];
 
     if (words.size() != 2)
       error->one(FLERR,"Improper POD file.", utils::getsyserror());
@@ -252,8 +252,7 @@ int FitPOD::get_number_atom_exyz(std::vector<int>& num_atom, int& num_atom_sum, 
       error->one(FLERR,"Cannot open POD coefficient file {}: ", filename, utils::getsyserror());
   }
 
-  char line[MAXLINE] = {'\0'};
-  char *ptr;
+  char line[MAXLINE],*ptr;
   int eof = 0;
   int num_configs = 0;
   num_atom_sum = 0;
@@ -325,8 +324,7 @@ void FitPOD::read_exyz_file(double *lattice, double *stress, double *energy, dou
       error->one(FLERR,"Cannot open POD coefficient file {}: ", filename, utils::getsyserror());
   }
 
-  char line[MAXLINE] = {'\0'};
-  char *ptr;
+  char line[MAXLINE],*ptr;
   int eof = 0;
   int cfi = 0;
   int nat = 0;

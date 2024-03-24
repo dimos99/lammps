@@ -16,6 +16,9 @@
 PairStyle(reaxff/kk,PairReaxFFKokkos<LMPDeviceType>);
 PairStyle(reaxff/kk/device,PairReaxFFKokkos<LMPDeviceType>);
 PairStyle(reaxff/kk/host,PairReaxFFKokkos<LMPHostType>);
+PairStyle(reax/c/kk,PairReaxFFKokkos<LMPDeviceType>);
+PairStyle(reax/c/kk/device,PairReaxFFKokkos<LMPDeviceType>);
+PairStyle(reax/c/kk/host,PairReaxFFKokkos<LMPHostType>);
 // clang-format on
 #else
 
@@ -130,9 +133,8 @@ class PairReaxFFKokkos : public PairReaxFF {
   void compute(int, int);
   void init_style();
   double memory_usage();
-  void FindBond(int &, int groupbit = 1);
+  void FindBond(int &);
   void PackBondBuffer(DAT::tdual_ffloat_1d, int &);
-  void PackReducedBondBuffer(DAT::tdual_ffloat_1d, int &, bool);
   void FindBondSpecies();
 
   template<int NEIGHFLAG>
@@ -185,7 +187,7 @@ class PairReaxFFKokkos : public PairReaxFF {
   // Returns if we need to populate d_d* functions or not
   template<int NEIGHFLAG>
   KOKKOS_INLINE_FUNCTION
-  bool build_bo_list(int, int, int, int&, int&) const;
+  bool build_bo_list(int, int, int, int, int, int&, int&) const;
 
   KOKKOS_INLINE_FUNCTION
   void operator()(TagPairReaxBuildListsFull, const int&) const;
@@ -285,14 +287,10 @@ class PairReaxFFKokkos : public PairReaxFF {
   void operator()(TagPairReaxFindBondZero, const int&) const;
 
   KOKKOS_INLINE_FUNCTION
-  void calculate_find_bond_item(int, int&, int) const;
+  void calculate_find_bond_item(int, int&) const;
 
   KOKKOS_INLINE_FUNCTION
   void pack_bond_buffer_item(int, int&, const bool&) const;
-
-  template<bool STORE_BONDS>
-  KOKKOS_INLINE_FUNCTION
-  void pack_reduced_bond_buffer_item(int, int&, const bool&) const;
 
   KOKKOS_INLINE_FUNCTION
   void operator()(TagPairReaxFindBondSpeciesZero, const int&) const;
@@ -414,7 +412,6 @@ class PairReaxFFKokkos : public PairReaxFF {
   typename AT::t_f_array f;
   typename AT::t_int_1d_randomread type;
   typename AT::t_tagint_1d_randomread tag;
-  typename AT::t_int_1d_randomread mask;
   typename AT::t_float_1d_randomread q;
   typename AT::t_tagint_1d_randomread molecule;
 
@@ -524,9 +521,8 @@ template <class DeviceType>
 struct PairReaxKokkosFindBondFunctor  {
   typedef DeviceType device_type;
   typedef int value_type;
-  int groupbit;
   PairReaxFFKokkos<DeviceType> c;
-  PairReaxKokkosFindBondFunctor(PairReaxFFKokkos<DeviceType>* c_ptr, int groupbit):groupbit(groupbit),c(*c_ptr){};
+  PairReaxKokkosFindBondFunctor(PairReaxFFKokkos<DeviceType>* c_ptr):c(*c_ptr) {};
 
   KOKKOS_INLINE_FUNCTION
   void join(int &dst,
@@ -536,7 +532,7 @@ struct PairReaxKokkosFindBondFunctor  {
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const int ii, int &numbonds) const {
-    c.calculate_find_bond_item(ii,numbonds,groupbit);
+    c.calculate_find_bond_item(ii,numbonds);
   }
 };
 
@@ -550,19 +546,6 @@ struct PairReaxKokkosPackBondBufferFunctor  {
   KOKKOS_INLINE_FUNCTION
   void operator()(const int ii, int &j, const bool &final) const {
     c.pack_bond_buffer_item(ii,j,final);
-  }
-};
-
-template <class DeviceType, bool STORE_BONDS>
-struct PairReaxKokkosPackReducedBondBufferFunctor  {
-  typedef DeviceType device_type;
-  typedef int value_type;
-  PairReaxFFKokkos<DeviceType> c;
-  PairReaxKokkosPackReducedBondBufferFunctor(PairReaxFFKokkos<DeviceType>* c_ptr):c(*c_ptr) {};
-
-  KOKKOS_INLINE_FUNCTION
-  void operator()(const int ii, int &j, const bool &final) const {
-    c.template pack_reduced_bond_buffer_item<STORE_BONDS>(ii,j,final);
   }
 };
 

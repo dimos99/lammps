@@ -144,8 +144,6 @@ void PotentialFileReader::next_dvector(double *list, int n)
 {
   try {
     return reader->next_dvector(list, n);
-  } catch (EOFException &) {
-    throw EOFException("EOF reached");
   } catch (FileReaderException &e) {
     error->one(FLERR, e.what());
   }

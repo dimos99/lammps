@@ -25,6 +25,7 @@
 #include "error.h"
 #include "force.h"
 #include "input.h"
+#include "lammps.h"
 #include "math_const.h"
 #include "update.h"
 
@@ -34,7 +35,7 @@ using MathConst::DEG2RAD;
 using MathConst::RAD2DEG;
 
 static constexpr double epsilon = 6.5e-6;
-static constexpr int MAXLINE = 1024;
+#define MAXLINE 1024
 /* ---------------------------------------------------------------------- */
 
 void AngleWrite::command(int narg, char **arg)
@@ -122,9 +123,11 @@ void AngleWrite::command(int narg, char **arg)
 
   if (comm->me == 0) {
     // set up new LAMMPS instance with dummy system to evaluate angle potential
-    LAMMPS::argv args = {"AngleWrite", "-nocite", "-echo",   "none",
-                         "-log",       "none",    "-screen", "none"};
-    LAMMPS *writer = new LAMMPS(args, singlecomm);
+    const char *args[] = {"AngleWrite", "-nocite", "-echo",   "none",
+                          "-log",       "none",    "-screen", "none"};
+    char **argv = (char **) args;
+    int argc = sizeof(args) / sizeof(char *);
+    LAMMPS *writer = new LAMMPS(argc, argv, singlecomm);
 
     // create dummy system replicating angle style settings
     writer->input->one(fmt::format("units {}", update->unit_style));
@@ -146,7 +149,7 @@ void AngleWrite::command(int narg, char **arg)
     writer->input->one("mass * 1.0");
     writer->input->one(fmt::format("angle_style {}", force->angle_style));
     FILE *coeffs;
-    char line[MAXLINE] = {'\0'};
+    char line[MAXLINE];
     coeffs = fopen(coeffs_file.c_str(), "r");
     for (int i = 0; i < atom->nangletypes; ++i) {
       fgets(line, MAXLINE, coeffs);

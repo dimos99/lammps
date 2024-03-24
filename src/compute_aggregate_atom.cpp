@@ -31,10 +31,10 @@
 #include "update.h"
 
 #include <cmath>
+#include <cstring>
 
 using namespace LAMMPS_NS;
 
-static constexpr int MAXLOOP = 100;
 /* ---------------------------------------------------------------------- */
 
 ComputeAggregateAtom::ComputeAggregateAtom(LAMMPS *lmp, int narg, char **arg) :
@@ -110,11 +110,6 @@ void ComputeAggregateAtom::compute_peratom()
     vector_atom = aggregateID;
   }
 
-  // communicate coords for ghost atoms if box can change, e.g. fix deform
-  // this ensures ghost atom coords are current
-
-  comm->forward_comm();
-
   // invoke full neighbor list (will copy or build if necessary)
   // on the first step of a run, set preflag to one in neighbor->build_one(...)
 
@@ -163,11 +158,8 @@ void ComputeAggregateAtom::compute_peratom()
 
   int change, done, anychange;
 
-  int counter = 0;
-  // stop after MAXLOOP iterations
-  while (counter < MAXLOOP) {
+  while (true) {
     comm->forward_comm(this);
-    ++counter;
 
     // reverse communication when bonds are not stored on every processor
 
@@ -226,8 +218,6 @@ void ComputeAggregateAtom::compute_peratom()
     MPI_Allreduce(&change, &anychange, 1, MPI_INT, MPI_MAX, world);
     if (!anychange) break;
   }
-  if ((comm->me == 0) && (counter >= MAXLOOP))
-    error->warning(FLERR, "Compute aggregate/atom did not converge after {} iterations", MAXLOOP);
 }
 
 /* ---------------------------------------------------------------------- */

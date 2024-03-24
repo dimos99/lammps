@@ -27,8 +27,8 @@
 
 using namespace LAMMPS_NS;
 
-static constexpr int ONEFIELD = 32;
-static constexpr int DELTA = 1048576;
+#define ONEFIELD 32
+#define DELTA 1048576
 
 /* ---------------------------------------------------------------------- */
 

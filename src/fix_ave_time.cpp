@@ -1033,44 +1033,41 @@ void FixAveTime::options(int iarg, int narg, char **arg)
   // optional args
 
   while (iarg < narg) {
-    if ((strcmp(arg[iarg],"file") == 0) || (strcmp(arg[iarg],"append") == 0)) {
-      if (iarg+2 > narg)
-        utils::missing_cmd_args(FLERR, std::string("fix ave/time ")+arg[iarg], error);
+    if (strcmp(arg[iarg],"file") == 0) {
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix ave/time command");
       yaml_flag = utils::strmatch(arg[iarg+1],"\\.[yY][aA]?[mM][lL]$");
       if (comm->me == 0) {
-        if (strcmp(arg[iarg],"file") == 0) fp = fopen(arg[iarg+1],"w");
-        else fp = fopen(arg[iarg+1],"a");
+        fp = fopen(arg[iarg+1],"w");
         if (fp == nullptr)
           error->one(FLERR,"Cannot open fix ave/time file {}: {}",
                      arg[iarg+1], utils::getsyserror());
       }
       iarg += 2;
     } else if (strcmp(arg[iarg],"ave") == 0) {
-      if (iarg+2 > narg) utils::missing_cmd_args(FLERR, "fix ave/time ave", error);
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix ave/time command");
       if (strcmp(arg[iarg+1],"one") == 0) ave = ONE;
       else if (strcmp(arg[iarg+1],"running") == 0) ave = RUNNING;
       else if (strcmp(arg[iarg+1],"window") == 0) ave = WINDOW;
-      else error->all(FLERR,"Unknown fix ave/time ave keyword {}", arg[iarg+1]);
+      else error->all(FLERR,"Illegal fix ave/time command");
       if (ave == WINDOW) {
-        if (iarg+3 > narg) utils::missing_cmd_args(FLERR, "fix ave/time ave window", error);
+        if (iarg+3 > narg) error->all(FLERR,"Illegal fix ave/time command");
         nwindow = utils::inumeric(FLERR,arg[iarg+2],false,lmp);
-        if (nwindow <= 0)
-          error->all(FLERR,"Illegal fix ave/time ave window argument {}; must be > 0", nwindow);
+        if (nwindow <= 0) error->all(FLERR,"Illegal fix ave/time command");
       }
       iarg += 2;
       if (ave == WINDOW) iarg++;
     } else if (strcmp(arg[iarg],"start") == 0) {
-      if (iarg+2 > narg) utils::missing_cmd_args(FLERR, "fix ave/time start", error);
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix ave/time command");
       startstep = utils::inumeric(FLERR,arg[iarg+1],false,lmp);
       iarg += 2;
     } else if (strcmp(arg[iarg],"mode") == 0) {
-      if (iarg+2 > narg) utils::missing_cmd_args(FLERR, "fix ave/time mode", error);
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix ave/time command");
       if (strcmp(arg[iarg+1],"scalar") == 0) mode = SCALAR;
       else if (strcmp(arg[iarg+1],"vector") == 0) mode = VECTOR;
-      else error->all(FLERR,"Unknown fix ave/time mode {}", arg[iarg+1]);
+      else error->all(FLERR,"Illegal fix ave/time command");
       iarg += 2;
     } else if (strcmp(arg[iarg],"off") == 0) {
-      if (iarg+2 > narg) utils::missing_cmd_args(FLERR, "fix ave/time off", error);
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix ave/time command");
       memory->grow(offlist,noff+1,"ave/time:offlist");
       offlist[noff++] = utils::inumeric(FLERR,arg[iarg+1],false,lmp);
       iarg += 2;
@@ -1078,27 +1075,27 @@ void FixAveTime::options(int iarg, int narg, char **arg)
       overwrite = 1;
       iarg += 1;
     } else if (strcmp(arg[iarg],"format") == 0) {
-      if (iarg+2 > narg) utils::missing_cmd_args(FLERR, "fix ave/time format", error);
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix ave/time command");
       delete[] format_user;
       format_user = utils::strdup(arg[iarg+1]);
       format = format_user;
       iarg += 2;
     } else if (strcmp(arg[iarg],"title1") == 0) {
-      if (iarg+2 > narg) utils::missing_cmd_args(FLERR, "fix ave/time title1", error);
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix ave/spatial command");
       delete[] title1;
       title1 = utils::strdup(arg[iarg+1]);
       iarg += 2;
     } else if (strcmp(arg[iarg],"title2") == 0) {
-      if (iarg+2 > narg) utils::missing_cmd_args(FLERR, "fix ave/time title2", error);
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix ave/spatial command");
       delete[] title2;
       title2 = utils::strdup(arg[iarg+1]);
       iarg += 2;
     } else if (strcmp(arg[iarg],"title3") == 0) {
-      if (iarg+2 > narg) utils::missing_cmd_args(FLERR, "fix ave/time title3", error);
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix ave/spatial command");
       delete[] title3;
       title3 = utils::strdup(arg[iarg+1]);
       iarg += 2;
-    } else error->all(FLERR,"Unknown fix ave/time keyword {}", arg[iarg]);
+    } else error->all(FLERR,"Unknown fix ave/time command option {}", arg[iarg]);
   }
 }
 

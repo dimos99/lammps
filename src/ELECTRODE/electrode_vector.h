@@ -29,7 +29,6 @@ class ElectrodeVector : protected Pointers {
   ~ElectrodeVector() override;
   void setup(class Pair *, class NeighList *, bool);
   void setup_tf(const std::map<int, double> &);
-  void setup_eta(int);
   void compute_vector(double *);
   int igroup, source_group;
 
@@ -40,8 +39,6 @@ class ElectrodeVector : protected Pointers {
   double **cutsq;
   double g_ewald, eta;
   bool tfflag;
-  bool etaflag;
-  int eta_index;
   std::map<int, double> tf_types;
   class Pair *pair;
   class NeighList *list;

@@ -28,9 +28,9 @@
 using namespace LAMMPS_NS;
 using namespace MathConst;
 
-static constexpr int DELTA = 10000;
+#define DELTA 10000
 
-static constexpr double SMALL =     0.001;
+#define SMALL     0.001
 
 /* ---------------------------------------------------------------------- */
 

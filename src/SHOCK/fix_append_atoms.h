@@ -29,7 +29,6 @@ class FixAppendAtoms : public Fix {
   FixAppendAtoms(class LAMMPS *, int, char **);
   ~FixAppendAtoms() override;
   int setmask() override;
-  void init() override;
   void setup(int) override;
   void pre_exchange() override;
   void initial_integrate(int) override;
