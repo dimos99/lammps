@@ -1,18 +1,46 @@
+/*
 //@HEADER
 // ************************************************************************
 //
-//                        Kokkos v. 4.0
-//       Copyright (2022) National Technology & Engineering
+//                        Kokkos v. 3.0
+//       Copyright (2020) National Technology & Engineering
 //               Solutions of Sandia, LLC (NTESS).
 //
 // Under the terms of Contract DE-NA0003525 with NTESS,
 // the U.S. Government retains certain rights in this software.
 //
-// Part of Kokkos, under the Apache License v2.0 with LLVM Exceptions.
-// See https://kokkos.org/LICENSE for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
 //
+// 1. Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the Corporation nor the names of the
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY NTESS "AS IS" AND ANY
+// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL NTESS OR THE
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+// Questions? Contact Christian R. Trott (crtrott@sandia.gov)
+//
+// ************************************************************************
 //@HEADER
+*/
 
 #ifndef KOKKOS_STD_ALGORITHMS_CONSTRAINTS_HPP_
 #define KOKKOS_STD_ALGORITHMS_CONSTRAINTS_HPP_
@@ -29,7 +57,7 @@ struct is_admissible_to_kokkos_std_algorithms : std::false_type {};
 
 template <typename T>
 struct is_admissible_to_kokkos_std_algorithms<
-    T, std::enable_if_t< ::Kokkos::is_view<T>::value && T::rank() == 1 &&
+    T, std::enable_if_t< ::Kokkos::is_view<T>::value && T::rank == 1 &&
                          (std::is_same<typename T::traits::array_layout,
                                        Kokkos::LayoutLeft>::value ||
                           std::is_same<typename T::traits::array_layout,
@@ -55,9 +83,6 @@ using iterator_category_t = typename T::iterator_category;
 template <class T>
 using is_iterator = Kokkos::is_detected<iterator_category_t, T>;
 
-template <class T>
-inline constexpr bool is_iterator_v = is_iterator<T>::value;
-
 //
 // are_iterators
 //
@@ -66,17 +91,14 @@ struct are_iterators;
 
 template <class T>
 struct are_iterators<T> {
-  static constexpr bool value = is_iterator_v<T>;
+  static constexpr bool value = is_iterator<T>::value;
 };
 
 template <class Head, class... Tail>
 struct are_iterators<Head, Tail...> {
   static constexpr bool value =
-      are_iterators<Head>::value && (are_iterators<Tail>::value && ... && true);
+      are_iterators<Head>::value && are_iterators<Tail...>::value;
 };
-
-template <class... Ts>
-inline constexpr bool are_iterators_v = are_iterators<Ts...>::value;
 
 //
 // are_random_access_iterators
@@ -87,20 +109,16 @@ struct are_random_access_iterators;
 template <class T>
 struct are_random_access_iterators<T> {
   static constexpr bool value =
-      is_iterator_v<T> && std::is_base_of<std::random_access_iterator_tag,
-                                          typename T::iterator_category>::value;
+      is_iterator<T>::value &&
+      std::is_base_of<std::random_access_iterator_tag,
+                      typename T::iterator_category>::value;
 };
 
 template <class Head, class... Tail>
 struct are_random_access_iterators<Head, Tail...> {
-  static constexpr bool value =
-      are_random_access_iterators<Head>::value &&
-      (are_random_access_iterators<Tail>::value && ... && true);
+  static constexpr bool value = are_random_access_iterators<Head>::value &&
+                                are_random_access_iterators<Tail...>::value;
 };
-
-template <class... Ts>
-inline constexpr bool are_random_access_iterators_v =
-    are_random_access_iterators<Ts...>::value;
 
 //
 // iterators_are_accessible_from
@@ -123,18 +141,16 @@ struct iterators_are_accessible_from<ExeSpace, Head, Tail...> {
       iterators_are_accessible_from<ExeSpace, Tail...>::value;
 };
 
-template <class ExecutionSpaceOrTeamHandleType, class... IteratorTypes>
+template <class ExecutionSpace, class... IteratorTypes>
 KOKKOS_INLINE_FUNCTION constexpr void
-static_assert_random_access_and_accessible(
-    const ExecutionSpaceOrTeamHandleType& /* ex_or_th*/,
-    IteratorTypes... /* iterators */) {
+static_assert_random_access_and_accessible(const ExecutionSpace& /* ex */,
+                                           IteratorTypes... /* iterators */) {
   static_assert(
       are_random_access_iterators<IteratorTypes...>::value,
       "Currently, Kokkos standard algorithms require random access iterators.");
-  static_assert(iterators_are_accessible_from<
-                    typename ExecutionSpaceOrTeamHandleType::execution_space,
-                    IteratorTypes...>::value,
-                "Incompatible view/iterator and execution space");
+  static_assert(
+      iterators_are_accessible_from<ExecutionSpace, IteratorTypes...>::value,
+      "Incompatible view/iterator and execution space");
 }
 
 //
@@ -194,10 +210,10 @@ struct not_openmptarget {
 #endif
 };
 
-template <class ExecutionSpaceOrTeamHandleType>
+template <class ExecutionSpace>
 KOKKOS_INLINE_FUNCTION constexpr void static_assert_is_not_openmptarget(
-    const ExecutionSpaceOrTeamHandleType& /*ex_or_th*/) {
-  static_assert(not_openmptarget<ExecutionSpaceOrTeamHandleType>::value,
+    const ExecutionSpace&) {
+  static_assert(not_openmptarget<ExecutionSpace>::value,
                 "Currently, Kokkos standard algorithms do not support custom "
                 "comparators in OpenMPTarget");
 }
@@ -206,8 +222,7 @@ KOKKOS_INLINE_FUNCTION constexpr void static_assert_is_not_openmptarget(
 // valid range
 //
 template <class IteratorType>
-KOKKOS_INLINE_FUNCTION void expect_valid_range(IteratorType first,
-                                               IteratorType last) {
+void expect_valid_range(IteratorType first, IteratorType last) {
   // this is a no-op for release
   KOKKOS_EXPECTS(last >= first);
   // avoid compiler complaining when KOKKOS_EXPECTS is no-op

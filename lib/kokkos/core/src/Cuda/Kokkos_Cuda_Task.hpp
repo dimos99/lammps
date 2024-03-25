@@ -1,18 +1,46 @@
+/*
 //@HEADER
 // ************************************************************************
 //
-//                        Kokkos v. 4.0
-//       Copyright (2022) National Technology & Engineering
+//                        Kokkos v. 3.0
+//       Copyright (2020) National Technology & Engineering
 //               Solutions of Sandia, LLC (NTESS).
 //
 // Under the terms of Contract DE-NA0003525 with NTESS,
 // the U.S. Government retains certain rights in this software.
 //
-// Part of Kokkos, under the Apache License v2.0 with LLVM Exceptions.
-// See https://kokkos.org/LICENSE for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
 //
+// 1. Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the Corporation nor the names of the
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY NTESS "AS IS" AND ANY
+// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL NTESS OR THE
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+// Questions? Contact Christian R. Trott (crtrott@sandia.gov)
+//
+// ************************************************************************
 //@HEADER
+*/
 
 #ifndef KOKKOS_IMPL_CUDA_TASK_HPP
 #define KOKKOS_IMPL_CUDA_TASK_HPP
@@ -222,7 +250,6 @@ class TaskQueueSpecialization<SimpleTaskScheduler<Kokkos::Cuda, QueueType>> {
     }
   }
 
-  // FIXME_CUDA_MULTIPLE_DEVICES
   static void execute(scheduler_type const& scheduler) {
     const int shared_per_warp = 2048;
     const dim3 grid(Kokkos::Impl::cuda_internal_multiprocessor_count(), 1, 1);
@@ -246,8 +273,7 @@ class TaskQueueSpecialization<SimpleTaskScheduler<Kokkos::Cuda, QueueType>> {
 
     size_t previous_stack_size = 0;
     KOKKOS_IMPL_CUDA_SAFE_CALL(
-        (CudaInternal::singleton().cuda_device_get_limit_wrapper(
-            &previous_stack_size, cudaLimitStackSize)));
+        cudaDeviceGetLimit(&previous_stack_size, cudaLimitStackSize));
 
     // If not large enough then set the stack size, in bytes:
 
@@ -255,15 +281,13 @@ class TaskQueueSpecialization<SimpleTaskScheduler<Kokkos::Cuda, QueueType>> {
 
     if (previous_stack_size < larger_stack_size) {
       KOKKOS_IMPL_CUDA_SAFE_CALL(
-          (CudaInternal::singleton().cuda_device_set_limit_wrapper(
-              cudaLimitStackSize, larger_stack_size)));
+          cudaDeviceSetLimit(cudaLimitStackSize, larger_stack_size));
     }
 
     cuda_task_queue_execute<<<grid, block, shared_total, stream>>>(
         scheduler, shared_per_warp);
 
-    KOKKOS_IMPL_CUDA_SAFE_CALL(
-        (CudaInternal::singleton().cuda_get_last_error_wrapper()));
+    KOKKOS_IMPL_CUDA_SAFE_CALL(cudaGetLastError());
 
     Impl::cuda_device_synchronize(
         "Kokkos::Impl::TaskQueueSpecialization<SimpleTaskScheduler<Kokkos::"
@@ -271,8 +295,7 @@ class TaskQueueSpecialization<SimpleTaskScheduler<Kokkos::Cuda, QueueType>> {
 
     if (previous_stack_size < larger_stack_size) {
       KOKKOS_IMPL_CUDA_SAFE_CALL(
-          (CudaInternal::singleton().cuda_device_set_limit_wrapper(
-              cudaLimitStackSize, previous_stack_size)));
+          cudaDeviceSetLimit(cudaLimitStackSize, previous_stack_size));
     }
   }
 
@@ -300,8 +323,7 @@ class TaskQueueSpecialization<SimpleTaskScheduler<Kokkos::Cuda, QueueType>> {
     set_cuda_task_base_apply_function_pointer<TaskType>
         <<<1, 1>>>(ptr_ptr, dtor_ptr);
 
-    KOKKOS_IMPL_CUDA_SAFE_CALL(
-        (CudaInternal::singleton().cuda_get_last_error_wrapper()));
+    KOKKOS_IMPL_CUDA_SAFE_CALL(cudaGetLastError());
     Impl::cuda_device_synchronize(
         "Kokkos::Impl::TaskQueueSpecialization<SimpleTaskScheduler<Kokkos::"
         "Cuda>::execute: Post Get Function Pointer for Tasks");
@@ -462,7 +484,6 @@ class TaskQueueSpecializationConstrained<
     } while (1);
   }
 
-  // FIXME_CUDA_MULTIPLE_DEVICES
   static void execute(scheduler_type const& scheduler) {
     const int shared_per_warp = 2048;
     const int warps_per_block = 4;
@@ -483,8 +504,7 @@ class TaskQueueSpecializationConstrained<
 
     size_t previous_stack_size = 0;
     KOKKOS_IMPL_CUDA_SAFE_CALL(
-        (CudaInternal::singleton().cuda_device_get_limit_wrapper(
-            &previous_stack_size, cudaLimitStackSize)));
+        cudaDeviceGetLimit(&previous_stack_size, cudaLimitStackSize));
 
     // If not large enough then set the stack size, in bytes:
 
@@ -492,15 +512,13 @@ class TaskQueueSpecializationConstrained<
 
     if (previous_stack_size < larger_stack_size) {
       KOKKOS_IMPL_CUDA_SAFE_CALL(
-          (CudaInternal::singleton().cuda_device_set_limit_wrapper(
-              cudaLimitStackSize, larger_stack_size)));
+          cudaDeviceSetLimit(cudaLimitStackSize, larger_stack_size));
     }
 
     cuda_task_queue_execute<<<grid, block, shared_total, stream>>>(
         scheduler, shared_per_warp);
 
-    KOKKOS_IMPL_CUDA_SAFE_CALL(
-        (CudaInternal::singleton().cuda_get_last_error_wrapper()));
+    KOKKOS_IMPL_CUDA_SAFE_CALL(cudaGetLastError());
 
     Impl::cuda_device_synchronize(
         "Kokkos::Impl::TaskQueueSpecializationConstrained<SimpleTaskScheduler<"
@@ -508,8 +526,7 @@ class TaskQueueSpecializationConstrained<
 
     if (previous_stack_size < larger_stack_size) {
       KOKKOS_IMPL_CUDA_SAFE_CALL(
-          (CudaInternal::singleton().cuda_device_set_limit_wrapper(
-              cudaLimitStackSize, previous_stack_size)));
+          cudaDeviceSetLimit(cudaLimitStackSize, previous_stack_size));
     }
   }
 
@@ -532,8 +549,7 @@ class TaskQueueSpecializationConstrained<
     set_cuda_task_base_apply_function_pointer<TaskType>
         <<<1, 1>>>(ptr_ptr, dtor_ptr);
 
-    KOKKOS_IMPL_CUDA_SAFE_CALL(
-        (CudaInternal::singleton().cuda_get_last_error_wrapper()));
+    KOKKOS_IMPL_CUDA_SAFE_CALL(cudaGetLastError());
     Impl::cuda_device_synchronize(
         "Kokkos::Impl::TaskQueueSpecializationConstrained<SimpleTaskScheduler<"
         "Kokkos::Cuda>::get_function_pointer: Post Get Function Pointer");
@@ -1054,8 +1070,7 @@ KOKKOS_INLINE_FUNCTION void parallel_scan(
   // Extract value_type from closure
 
   using value_type = typename Kokkos::Impl::FunctorAnalysis<
-      Kokkos::Impl::FunctorPatternInterface::SCAN, void, Closure,
-      void>::value_type;
+      Kokkos::Impl::FunctorPatternInterface::SCAN, void, Closure>::value_type;
 
   if (1 < loop_boundaries.thread.team_size()) {
     // make sure all threads perform all loop iterations
@@ -1120,8 +1135,7 @@ KOKKOS_INLINE_FUNCTION void parallel_scan(
   // Extract value_type from closure
 
   using value_type = typename Kokkos::Impl::FunctorAnalysis<
-      Kokkos::Impl::FunctorPatternInterface::SCAN, void, Closure,
-      void>::value_type;
+      Kokkos::Impl::FunctorPatternInterface::SCAN, void, Closure>::value_type;
 
   if (1 < loop_boundaries.thread.team_size()) {
     // make sure all threads perform all loop iterations

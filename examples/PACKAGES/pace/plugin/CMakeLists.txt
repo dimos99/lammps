@@ -1,9 +1,10 @@
-# -*- CMake -*- build system for plugin examples.
+##########################################
+# CMake build system for plugin examples.
 # The is meant to be used as a template for plugins that are
 # distributed independent from the LAMMPS package.
 ##########################################
 
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.10)
 
 project(paceplugin VERSION 1.0 LANGUAGES CXX)
 

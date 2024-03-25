@@ -52,6 +52,7 @@ This is the list of packages that may require additional steps.
    * :ref:`ML-POD <ml-pod>`
    * :ref:`ML-QUIP <ml-quip>`
    * :ref:`MOLFILE <molfile>`
+   * :ref:`MSCG <mscg>`
    * :ref:`NETCDF <netcdf>`
    * :ref:`OPENMP <openmp>`
    * :ref:`OPT <opt>`
@@ -626,24 +627,18 @@ They must be specified in uppercase.
    *  - HOPPER90
       - GPU
       - NVIDIA Hopper generation CC 9.0 GPU
-   *  - AMD_GFX906
+   *  - VEGA900
       - GPU
-      - AMD GPU MI50/MI60
-   *  - AMD_GFX908
+      - AMD GPU MI25 GFX900
+   *  - VEGA906
       - GPU
-      - AMD GPU MI100
-   *  - AMD_GFX90A
+      - AMD GPU MI50/MI60 GFX906
+   *  - VEGA908
       - GPU
-      - AMD GPU MI200
-   *  - AMD_GFX942
+      - AMD GPU MI100 GFX908
+   *  - VEGA90A
       - GPU
-      - AMD GPU MI300
-   *  - AMD_GFX1030
-      - GPU
-      - AMD GPU V620/W6800
-   *  - AMD_GFX1100
-      - GPU
-      - AMD GPU RX7900XTX
+      - AMD GPU MI200 GFX90A
    *  - INTEL_GEN
       - GPU
       - SPIR64-based devices, e.g. Intel GPUs, using JIT
@@ -666,7 +661,7 @@ They must be specified in uppercase.
       - GPU
       - Intel GPU Ponte Vecchio
 
-This list was last updated for version 4.2 of the Kokkos library.
+This list was last updated for version 3.7.1 of the Kokkos library.
 
 .. tabs::
 
@@ -722,10 +717,9 @@ This list was last updated for version 4.2 of the Kokkos library.
       ``cmake/presets`` folder, ``kokkos-serial.cmake``,
       ``kokkos-openmp.cmake``, ``kokkos-cuda.cmake``,
       ``kokkos-hip.cmake``, and ``kokkos-sycl.cmake``.  They will enable
-      the KOKKOS package and enable some hardware choices.  For GPU
-      support those preset files must be customized to match the
-      hardware used. So to compile with CUDA device parallelization with
-      some common packages enabled, you can do the following:
+      the KOKKOS package and enable some hardware choice.  So to compile
+      with CUDA device parallelization (for GPUs with CC 5.0 and up)
+      with some common packages enabled, you can do the following:
 
       .. code-block:: bash
 
@@ -981,6 +975,59 @@ Python version 3.6 or later.
 
 ----------
 
+.. _mscg:
+
+MSCG package
+-----------------------
+
+To build with this package, you must download and build the MS-CG
+library.  Building the MS-CG library requires that the GSL
+(GNU Scientific Library) headers and libraries are installed on your
+machine.  See the ``lib/mscg/README`` and ``MSCG/Install`` files for
+more details.
+
+.. tabs::
+
+   .. tab:: CMake build
+
+      .. code-block:: bash
+
+         -D DOWNLOAD_MSCG=value    # download MSCG for build, value = no (default) or yes
+         -D MSCG_LIBRARY=path      # MSCG library file (only needed if a custom location)
+         -D MSCG_INCLUDE_DIR=path  # MSCG include directory (only needed if a custom location)
+
+      If ``DOWNLOAD_MSCG`` is set, the MSCG library will be downloaded
+      and built inside the CMake build directory.  If the MSCG library
+      is already on your system (in a location CMake cannot find it),
+      ``MSCG_LIBRARY`` is the filename (plus path) of the MSCG library
+      file, not the directory the library file is in.
+      ``MSCG_INCLUDE_DIR`` is the directory the MSCG include file is in.
+
+   .. tab:: Traditional make
+
+      You can download and build the MS-CG library manually if you
+      prefer; follow the instructions in ``lib/mscg/README``\ .  You can
+      also do it in one step from the ``lammps/src`` dir, using a
+      command like these, which simply invokes the
+      ``lib/mscg/Install.py`` script with the specified args:
+
+      .. code-block:: bash
+
+         make lib-mscg             # print help message
+         make lib-mscg args="-b -m serial"   # download and build in lib/mscg/MSCG-release-master
+                                             # with the settings compatible with "make serial"
+         make lib-mscg args="-b -m mpi"      # download and build in lib/mscg/MSCG-release-master
+                                             # with the settings compatible with "make mpi"
+         make lib-mscg args="-p /usr/local/mscg-release" # use the existing MS-CG installation in /usr/local/mscg-release
+
+      Note that 2 symbolic (soft) links, ``includelink`` and ``liblink``,
+      will be created in ``lib/mscg`` to point to the MS-CG
+      ``src/installation`` dir.  When LAMMPS is built in src it will use
+      these links.  You should not need to edit the
+      ``lib/mscg/Makefile.lammps`` file.
+
+----------
+
 .. _opt:
 
 OPT package
@@ -1056,12 +1103,12 @@ additional details.
 
       .. code-block:: bash
 
-         -D Python_EXECUTABLE=path   # path to Python executable to use
+         -D PYTHON_EXECUTABLE=path   # path to Python executable to use
 
       Without this setting, CMake will guess the default Python version
       on your system.  To use a different Python version, you can either
       create a virtualenv, activate it and then run cmake.  Or you can
-      set the Python_EXECUTABLE variable to specify which Python
+      set the PYTHON_EXECUTABLE variable to specify which Python
       interpreter should be used.  Note note that you will also need to
       have the development headers installed for this version,
       e.g. python2-devel.

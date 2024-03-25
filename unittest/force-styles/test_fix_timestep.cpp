@@ -61,11 +61,11 @@ void cleanup_lammps(LAMMPS *lmp, const TestConfig &cfg)
     delete lmp;
 }
 
-LAMMPS *init_lammps(LAMMPS::argv & args, const TestConfig &cfg, const bool use_respa = false)
+LAMMPS *init_lammps(int argc, char **argv, const TestConfig &cfg, const bool use_respa = false)
 {
     LAMMPS *lmp;
 
-    lmp = new LAMMPS(args, MPI_COMM_WORLD);
+    lmp = new LAMMPS(argc, argv, MPI_COMM_WORLD);
 
     // check if prerequisite styles are available
     Info *info = new Info(lmp);
@@ -169,8 +169,11 @@ void restart_lammps(LAMMPS *lmp, const TestConfig &cfg, bool use_rmass, bool use
 void generate_yaml_file(const char *outfile, const TestConfig &config)
 {
     // initialize system geometry
-    LAMMPS::argv args = {"FixIntegrate", "-log", "none", "-echo", "screen", "-nocite"};
-    LAMMPS *lmp = init_lammps(args, config);
+    const char *args[] = {"FixIntegrate", "-log", "none", "-echo", "screen", "-nocite"};
+
+    char **argv = (char **)args;
+    int argc    = sizeof(args) / sizeof(char *);
+    LAMMPS *lmp = init_lammps(argc, argv, config);
     if (!lmp) {
         std::cerr << "One or more prerequisite styles are not available "
                      "in this LAMMPS configuration:\n";
@@ -249,10 +252,13 @@ TEST(FixTimestep, plain)
     if (test_config.skip_tests.count("static")) GTEST_SKIP();
 #endif
 
-    LAMMPS::argv args = {"FixTimestep", "-log", "none", "-echo", "screen", "-nocite"};
+    const char *args[] = {"FixTimestep", "-log", "none", "-echo", "screen", "-nocite"};
+
+    char **argv = (char **)args;
+    int argc    = sizeof(args) / sizeof(char *);
 
     ::testing::internal::CaptureStdout();
-    LAMMPS *lmp        = init_lammps(args, test_config);
+    LAMMPS *lmp        = init_lammps(argc, argv, test_config);
     std::string output = ::testing::internal::GetCapturedStdout();
     if (verbose) std::cout << output;
 
@@ -414,7 +420,7 @@ TEST(FixTimestep, plain)
         if (!verbose) ::testing::internal::GetCapturedStdout();
 
         ::testing::internal::CaptureStdout();
-        lmp    = init_lammps(args, test_config, true);
+        lmp    = init_lammps(argc, argv, test_config, true);
         output = ::testing::internal::GetCapturedStdout();
         if (verbose) std::cout << output;
 
@@ -548,12 +554,14 @@ TEST(FixTimestep, omp)
     if (test_config.skip_tests.count("static")) GTEST_SKIP();
 #endif
 
-    LAMMPS::argv args = {"FixTimestep", "-log", "none", "-echo", "screen", "-nocite",
-                         "-pk",         "omp",  "4",    "-sf",   "omp"};
+    const char *args[] = {"FixTimestep", "-log", "none", "-echo", "screen", "-nocite",
+                          "-pk",         "omp",  "4",    "-sf",   "omp"};
 
+    char **argv = (char **)args;
+    int argc    = sizeof(args) / sizeof(char *);
 
     ::testing::internal::CaptureStdout();
-    LAMMPS *lmp        = init_lammps(args, test_config);
+    LAMMPS *lmp        = init_lammps(argc, argv, test_config);
     std::string output = ::testing::internal::GetCapturedStdout();
     if (verbose) std::cout << output;
 
@@ -715,7 +723,7 @@ TEST(FixTimestep, omp)
         if (!verbose) ::testing::internal::GetCapturedStdout();
 
         ::testing::internal::CaptureStdout();
-        lmp    = init_lammps(args, test_config, true);
+        lmp    = init_lammps(argc, argv, test_config, true);
         output = ::testing::internal::GetCapturedStdout();
         if (verbose) std::cout << output;
 

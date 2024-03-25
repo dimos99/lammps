@@ -63,7 +63,6 @@ help:
 	@echo "  anchor_check  scan for duplicate anchor labels"
 	@echo "  style_check   check for complete and consistent style lists"
 	@echo "  package_check check for complete and consistent package lists"
-	@echo "  role_check    check for misformatted role keywords"
 	@echo "  spelling      spell-check the manual"
 
 # ------------------------------------------
@@ -99,8 +98,6 @@ html: xmlgen $(VENV) $(SPHINXCONFIG)/conf.py $(ANCHORCHECK) $(MATHJAX)
 		env LC_ALL=C grep -n '[^ -~]' $(RSTDIR)/*.rst ;\
 		env LC_ALL=C grep -n ' :[a-z]\+`' $(RSTDIR)/*.rst ;\
 		env LC_ALL=C grep -n ' `[^`]\+<[a-z][^`]\+`[^_]' $(RSTDIR)/*.rst ;\
-		env LC_ALL=C grep -n ':\(ref\|doc\):[^`]' $(RSTDIR)/*.rst ;\
-		env LC_ALL=C grep -n '\(ref\|doc\)`[^`]' $(RSTDIR)/*.rst ;\
 		$(PYTHON) $(BUILDDIR)/utils/check-styles.py -s ../src -d src ;\
 		echo "############################################" ;\
 		deactivate ;\
@@ -182,8 +179,6 @@ pdf: xmlgen $(VENV) $(SPHINXCONFIG)/conf.py $(ANCHORCHECK)
 		env LC_ALL=C grep -n '[^ -~]' $(RSTDIR)/*.rst ;\
 		env LC_ALL=C grep -n ' :[a-z]\+`' $(RSTDIR)/*.rst ;\
 		env LC_ALL=C grep -n ' `[^`]\+<[a-z][^`]\+`[^_]' $(RSTDIR)/*.rst ;\
-		env LC_ALL=C grep -n ':\(ref\|doc\):[^`]' $(RSTDIR)/*.rst ;\
-		env LC_ALL=C grep -n '\(ref\|doc\)`[^`]' $(RSTDIR)/*.rst ;\
 		$(PYTHON) utils/check-styles.py -s ../src -d src ;\
 		echo "############################################" ;\
 		deactivate ;\
@@ -232,8 +227,6 @@ char_check :
 role_check :
 	@( env LC_ALL=C grep -n ' :[a-z]\+`' $(RSTDIR)/*.rst && exit 1 || : )
 	@( env LC_ALL=C grep -n ' `[^`]\+<[a-z][^`]\+`[^_]' $(RSTDIR)/*.rst && exit 1 || : )
-	@( env LC_ALL=C grep -n ':\(ref\|doc\):[^`]' $(RSTDIR)/*.rst && exit 1 || : )
-	@( env LC_ALL=C grep -n '\(ref\|doc\)`[^`]' $(RSTDIR)/*.rst && exit 1 || : )
 
 link_check : $(VENV) html
 	@(\

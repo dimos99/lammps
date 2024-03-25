@@ -5,14 +5,6 @@
 # Validate options are given with correct case and define an internal
 # upper-case version for use within
 
-set(Kokkos_OPTIONS_NOT_TO_EXPORT
-  Kokkos_ENABLE_BENCHMARKS
-  Kokkos_ENABLE_EXAMPLES
-  Kokkos_ENABLE_TESTS
-  Kokkos_ENABLE_HEADER_SELF_CONTAINMENT_TESTS
-  Kokkos_ENABLE_COMPILER_WARNINGS
-)
-
 #
 #
 # @FUNCTION: kokkos_deprecated_list
@@ -64,12 +56,6 @@ FUNCTION(kokkos_option CAMEL_SUFFIX DEFAULT TYPE DOCSTRING)
 
   # Make sure this appears in the cache with the appropriate DOCSTRING
   SET(${CAMEL_NAME} ${DEFAULT} CACHE ${TYPE} ${DOCSTRING})
-
-  IF (KOKKOS_HAS_TRILINOS)
-    IF (NOT CAMEL_NAME IN_LIST Kokkos_OPTIONS_NOT_TO_EXPORT)
-      TRIBITS_PKG_EXPORT_CACHE_VAR(${CAMEL_NAME})
-    ENDIF()
-  ENDIF()
 
   #I don't love doing it this way because it's N^2 in number options, but c'est la vie
   FOREACH(opt ${KOKKOS_GIVEN_VARIABLES})
@@ -295,11 +281,7 @@ MACRO(kokkos_import_tpl NAME)
       MESSAGE(FATAL_ERROR "Find module succeeded for ${NAME}, but did not produce valid target ${TPL_IMPORTED_NAME}")
     ENDIF()
     IF(NOT TPL_NO_EXPORT)
-      GET_TARGET_PROPERTY(TPL_ORIGINAL_NAME ${TPL_IMPORTED_NAME} ALIASED_TARGET)
-      IF (NOT TPL_ORIGINAL_NAME)
-        SET(TPL_ORIGINAL_NAME ${TPL_IMPORTED_NAME})
-      ENDIF()
-      KOKKOS_EXPORT_IMPORTED_TPL(${TPL_ORIGINAL_NAME})
+      KOKKOS_EXPORT_IMPORTED_TPL(${TPL_IMPORTED_NAME})
     ENDIF()
     LIST(APPEND KOKKOS_ENABLED_TPLS ${NAME})
   ENDIF()
@@ -841,7 +823,7 @@ FUNCTION(kokkos_link_tpl TARGET)
 ENDFUNCTION()
 
 FUNCTION(COMPILER_SPECIFIC_OPTIONS_HELPER)
-  SET(COMPILERS NVIDIA NVHPC DEFAULT Cray Intel Clang AppleClang IntelLLVM GNU HIPCC Fujitsu MSVC)
+  SET(COMPILERS NVIDIA NVHPC XL XLClang DEFAULT Cray Intel Clang AppleClang IntelLLVM GNU HIPCC Fujitsu)
   CMAKE_PARSE_ARGUMENTS(
     PARSE
     "LINK_OPTIONS;COMPILE_OPTIONS;COMPILE_DEFINITIONS;LINK_LIBRARIES"

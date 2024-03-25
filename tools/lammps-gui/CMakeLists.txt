@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(lammps-gui VERSION 1.5.11 LANGUAGES CXX)
+project(lammps-gui VERSION 1.2.4 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -11,44 +11,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(LAMMPS_GUI_USE_PLUGIN "Load LAMMPS library dynamically at runtime" OFF)
 mark_as_advanced(LAMMPS_GUI_USE_PLUGIN)
-option(LAMMPS_GUI_USE_QT5 "Prefer using Qt5 over Qt6" OFF)
-
-include(CheckIncludeFileCXX)
-# helper function to check for usable omp.h header
-function(check_omp_h_include)
-  find_package(OpenMP COMPONENTS CXX QUIET)
-  if(OpenMP_CXX_FOUND)
-    set(CMAKE_REQUIRED_FLAGS ${OpenMP_CXX_FLAGS})
-    set(CMAKE_REQUIRED_INCLUDES ${OpenMP_CXX_INCLUDE_DIRS})
-    set(CMAKE_REQUIRED_LINK_OPTIONS ${OpenMP_CXX_FLAGS})
-    set(CMAKE_REQUIRED_LIBRARIES ${OpenMP_CXX_LIBRARIES})
-    check_include_file_cxx(omp.h _have_omp_h)
-  else()
-    set(_have_omp_h FALSE)
-  endif()
-  set(HAVE_OMP_H_INCLUDE ${_have_omp_h} PARENT_SCOPE)
-endfunction()
-
-# detect if we may enable OpenMP support by default
-set(BUILD_OMP_DEFAULT OFF)
-find_package(OpenMP COMPONENTS CXX QUIET)
-if(OpenMP_CXX_FOUND)
-  check_omp_h_include()
-  if(HAVE_OMP_H_INCLUDE)
-    set(BUILD_OMP_DEFAULT ON)
-  endif()
-endif()
-
-option(BUILD_OMP "Build with OpenMP support" ${BUILD_OMP_DEFAULT})
-if(BUILD_OMP)
-  find_package(OpenMP COMPONENTS CXX REQUIRED)
-  check_omp_h_include()
-  if(NOT HAVE_OMP_H_INCLUDE)
-    message(FATAL_ERROR "Cannot find the 'omp.h' header file required for full OpenMP support")
-  endif()
-endif()
 
 # checks
+if(NOT LAMMPS_EXCEPTIONS)
+  message(FATAL_ERROR "Must enable LAMMPS_EXCEPTIONS for building the LAMMPS GUI")
+endif()
 # when this file is included as subdirectory in the LAMMPS build, many settings are directly imported
 if(LAMMPS_DIR)
   set(LAMMPS_HEADER_DIR ${LAMMPS_SOURCE_DIR})
@@ -79,7 +46,6 @@ else()
       add_compile_options(/Zc:__cplusplus)
       add_compile_options(/wd4244)
       add_compile_options(/wd4267)
-      add_compile_options(/wd4250)
       if(LAMMPS_EXCEPTIONS)
         add_compile_options(/EHsc)
       endif()
@@ -87,11 +53,6 @@ else()
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
   endif()
 endif()
-
-#get_lammps_version(${LAMMPS_SOURCE_DIR}/version.h LAMMPS_VERSION)
-#if (LAMMPS_VERSION LESS_EQUAL 20230802)
-#  message(FATAL_ERROR "LAMMPS GUI v${PROJECT_VERSION} is incompatible with LAMMPS 2 August 2023 or older")
-#endif()
 
 set(LAMMPS_PLUGINLIB_DIR ${LAMMPS_DIR}/examples/COUPLE/plugin)
 if(LAMMPS_GUI_USE_PLUGIN)
@@ -109,31 +70,21 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 endif()
 
 # we require Qt 5 and at least version 5.12 at that.
-if(NOT LAMMPS_GUI_USE_QT5)
-  find_package(Qt6 6.2 QUIET COMPONENTS Widgets Charts)
-endif()
-if(NOT Qt6_FOUND)
-  find_package(Qt5 5.12 REQUIRED COMPONENTS Widgets Charts)
-  set(QT_VERSION_MAJOR 5)
-else()
-  set(QT_VERSION_MAJOR 6)
-endif()
-message(STATUS "Using Qt version ${Qt${QT_VERSION_MAJOR}_VERSION} for LAMMPS GUI")
+find_package(Qt5 5.12 REQUIRED COMPONENTS Widgets Charts)
 
 set(PROJECT_SOURCES
   main.cpp
-  lammpsgui.cpp
-  lammpsgui.h
-  lammpsgui.ui
-  chartviewer.cpp
-  chartviewer.h
   codeeditor.cpp
   codeeditor.h
-  helpers.cpp
   highlighter.cpp
   highlighter.h
   imageviewer.cpp
   imageviewer.h
+  chartviewer.cpp
+  chartviewer.h
+  lammpsgui.cpp
+  lammpsgui.h
+  lammpsgui.ui
   lammpsrunner.h
   lammpswrapper.cpp
   lammpswrapper.h
@@ -144,17 +95,11 @@ set(PROJECT_SOURCES
   preferences.h
   setvariables.cpp
   setvariables.h
-  slideshow.h
-  slideshow.cpp
   stdcapture.cpp
   ${PLUGIN_LOADER_SRC}
   ${ICON_RC_FILE}
 )
-if(QT_VERSION_MAJOR EQUAL 6)
-  qt6_add_resources(PROJECT_SOURCES lammpsgui.qrc)
-else()
-  qt5_add_resources(PROJECT_SOURCES lammpsgui.qrc)
-endif()
+qt5_add_resources(PROJECT_SOURCES lammpsgui.qrc)
 
 if(APPLE)
   set(MACOSX_ICON_FILE ${LAMMPS_DIR}/cmake/packaging/lammps.icns)
@@ -162,22 +107,10 @@ if(APPLE)
   set(MACOSX_BACKGROUND_FILE ${LAMMPS_DIR}/cmake/packaging/LAMMPS_DMG_Background.png)
 endif()
 
-if(QT_VERSION_MAJOR EQUAL 6)
-  qt_add_executable(lammps-gui
-    MANUAL_FINALIZATION
-    ${MACOSX_ICON_FILE}
-    ${PROJECT_SOURCES}
-  )
-else()
-  add_executable(lammps-gui
-    ${MACOSX_ICON_FILE}
-    ${PROJECT_SOURCES}
-  )
-endif()
-
-if(QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(lammps-gui)
-endif()
+add_executable(lammps-gui
+  ${MACOSX_ICON_FILE}
+  ${PROJECT_SOURCES}
+)
 
 # compilation settings
 if(LAMMPS_GUI_USE_PLUGIN)
@@ -189,7 +122,7 @@ else()
 endif()
 target_include_directories(lammps-gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(lammps-gui PRIVATE LAMMPS_GUI_VERSION="${PROJECT_VERSION}")
-target_link_libraries(lammps-gui PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Charts)
+target_link_libraries(lammps-gui PRIVATE Qt5::Widgets Qt5::Charts)
 if(BUILD_OMP)
   find_package(OpenMP COMPONENTS CXX REQUIRED)
   target_link_libraries(lammps-gui PRIVATE OpenMP::OpenMP_CXX)
@@ -227,21 +160,13 @@ if(APPLE)
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LAMMPS_DIR}/doc/lammps.1 ${APP_CONTENTS}/share/lammps/man/man1/
     COMMAND ${CMAKE_COMMAND} -E create_symlink lammps.1 ${APP_CONTENTS}/share/lammps/man/man1/lmp.1
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LAMMPS_DIR}/doc/msi2lmp.1 ${APP_CONTENTS}/share/lammps/man/man1
-    DEPENDS lammps-gui lammps lmp binary2txt stl_bin2txt msi2lmp phana
+    DEPENDS lammps-gui lammps
     COMMENT "Copying additional files into macOS app bundle tree"
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   )
-  if(FFMPEG_EXECUTABLE)
-    add_custom_target(copy-ffmpeg
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${FFMPEG_EXECUTABLE} ${APP_CONTENTS}/bin/
-      COMMENT "Copying FFMpeg into macOS app bundle tree"
-      DEPENDS complete-bundle
-    )
-    set(FFMPEG_TARGET copy-ffmpeg)
-  endif()
   add_custom_target(dmg
     COMMAND ${LAMMPS_DIR}/cmake/packaging/build_macos_dmg.sh
-    DEPENDS complete-bundle ${FFMPEG_TARGET}
+    DEPENDS complete-bundle
     COMMENT "Create Drag-n-Drop installer disk image from app bundle"
     BYPRODUCT LAMMPS-macOS-multiarch.dmg
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -270,7 +195,7 @@ elseif((CMAKE_SYSTEM_NAME STREQUAL "Windows") AND CMAKE_CROSSCOMPILING)
     COMMENT "Create zip file with windows binaries"
     BYPRODUCT LAMMPS-Win10-amd64.zip
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-elseif((CMAKE_SYSTEM_NAME STREQUAL "Linux") AND NOT LAMMPS_GUI_USE_PLUGIN)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   install(TARGETS lammps-gui DESTINATION ${CMAKE_INSTALL_BINDIR})
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lammps-gui.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications/)
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lammps-input.xml DESTINATION ${CMAKE_INSTALL_DATADIR}/mime/packages/)

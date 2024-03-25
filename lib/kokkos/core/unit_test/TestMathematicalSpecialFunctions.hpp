@@ -1,19 +1,3 @@
-//@HEADER
-// ************************************************************************
-//
-//                        Kokkos v. 4.0
-//       Copyright (2022) National Technology & Engineering
-//               Solutions of Sandia, LLC (NTESS).
-//
-// Under the terms of Contract DE-NA0003525 with NTESS,
-// the U.S. Government retains certain rights in this software.
-//
-// Part of Kokkos, under the Apache License v2.0 with LLVM Exceptions.
-// See https://kokkos.org/LICENSE for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-//
-//@HEADER
-
 #include <fstream>
 #include <gtest/gtest.h>
 #include "Kokkos_Core.hpp"
@@ -505,13 +489,7 @@ struct TestComplexBesselJ0Y0Function {
     Kokkos::deep_copy(d_z, h_z);
 
     // Call Bessel functions
-#if (HIP_VERSION_MAJOR == 5) && (HIP_VERSION_MINOR == 4)
-    using Property =
-        Kokkos::Experimental::WorkItemProperty::ImplForceGlobalLaunch_t;
-#else
-    using Property = Kokkos::Experimental::WorkItemProperty::None_t;
-#endif
-    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace, Property>(0, N), *this);
+    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0, N), *this);
     Kokkos::fence();
 
     Kokkos::deep_copy(h_cbj0, d_cbj0);
@@ -640,8 +618,8 @@ struct TestComplexBesselJ0Y0Function {
 
     Kokkos::deep_copy(d_z_large, h_z_large);
 
-    Kokkos::parallel_for(
-        Kokkos::RangePolicy<ExecSpace, Property, TestLargeArgTag>(0, 1), *this);
+    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace, TestLargeArgTag>(0, 1),
+                         *this);
     Kokkos::fence();
 
     Kokkos::deep_copy(h_cbj0_large, d_cbj0_large);
@@ -801,13 +779,7 @@ struct TestComplexBesselJ1Y1Function {
     Kokkos::deep_copy(d_z, h_z);
 
     // Call Bessel functions
-#if (HIP_VERSION_MAJOR == 5) && (HIP_VERSION_MINOR == 4)
-    using Property =
-        Kokkos::Experimental::WorkItemProperty::ImplForceGlobalLaunch_t;
-#else
-    using Property = Kokkos::Experimental::WorkItemProperty::None_t;
-#endif
-    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace, Property>(0, N), *this);
+    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0, N), *this);
     Kokkos::fence();
 
     Kokkos::deep_copy(h_cbj1, d_cbj1);
@@ -911,14 +883,11 @@ struct TestComplexBesselJ1Y1Function {
                 Kokkos::abs(h_ref_cbj1(i)) * 1e-13);
     }
 
-// FIXME_SYCL Failing for Intel GPUs
-#if !(defined(KOKKOS_ENABLE_SYCL) && defined(KOKKOS_ARCH_INTEL_GPU))
     EXPECT_EQ(h_ref_cby1(0), h_cby1(0));
     for (int i = 1; i < N; i++) {
       EXPECT_LE(Kokkos::abs(h_cby1(i) - h_ref_cby1(i)),
                 Kokkos::abs(h_ref_cby1(i)) * 1e-13);
     }
-#endif
 
     ////Test large arguments
     d_z_large        = ViewType("d_z_large", 6);
@@ -939,8 +908,8 @@ struct TestComplexBesselJ1Y1Function {
 
     Kokkos::deep_copy(d_z_large, h_z_large);
 
-    Kokkos::parallel_for(
-        Kokkos::RangePolicy<ExecSpace, Property, TestLargeArgTag>(0, 1), *this);
+    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace, TestLargeArgTag>(0, 1),
+                         *this);
     Kokkos::fence();
 
     Kokkos::deep_copy(h_cbj1_large, d_cbj1_large);
@@ -1058,7 +1027,7 @@ struct TestComplexBesselI0K0Function {
   void testit() {
     using Kokkos::Experimental::infinity;
 
-    int N      = 26;
+    int N      = 25;
     d_z        = ViewType("d_z", N);
     d_cbi0     = ViewType("d_cbi0", N);
     d_cbk0     = ViewType("d_cbk0", N);
@@ -1094,18 +1063,11 @@ struct TestComplexBesselI0K0Function {
     h_z(22) = Kokkos::complex<double>(-28.0, 0.0);
     h_z(23) = Kokkos::complex<double>(60.0, 0.0);
     h_z(24) = Kokkos::complex<double>(-60.0, 0.0);
-    h_z(25) = Kokkos::complex<double>(7.998015e-5, 0.0);
 
     Kokkos::deep_copy(d_z, h_z);
 
     // Call Bessel functions
-#if (HIP_VERSION_MAJOR == 5) && (HIP_VERSION_MINOR == 4)
-    using Property =
-        Kokkos::Experimental::WorkItemProperty::ImplForceGlobalLaunch_t;
-#else
-    using Property = Kokkos::Experimental::WorkItemProperty::None_t;
-#endif
-    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace, Property>(0, N), *this);
+    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0, N), *this);
     Kokkos::fence();
 
     Kokkos::deep_copy(h_cbi0, d_cbi0);
@@ -1153,7 +1115,6 @@ struct TestComplexBesselI0K0Function {
     h_ref_cbi0(22) = Kokkos::complex<double>(1.095346047317573e+11, 0);
     h_ref_cbi0(23) = Kokkos::complex<double>(5.894077055609803e+24, 0);
     h_ref_cbi0(24) = Kokkos::complex<double>(5.894077055609803e+24, 0);
-    h_ref_cbi0(25) = Kokkos::complex<double>(1.0000000015992061009, 0);
 
     h_ref_cbk0(0) = Kokkos::complex<double>(infinity<double>::value, 0);
     h_ref_cbk0(1) =
@@ -1200,31 +1161,17 @@ struct TestComplexBesselI0K0Function {
     h_ref_cbk0(23) = Kokkos::complex<double>(1.413897840559108e-27, 0);
     h_ref_cbk0(24) =
         Kokkos::complex<double>(1.413897840559108e-27, -1.851678917759592e+25);
-    h_ref_cbk0(25) = Kokkos::complex<double>(9.5496636116079915979, 0.);
 
-    // FIXME_HIP Disable the test when using ROCm 5.5 and 5.6 due to a known
-    // compiler bug
-#if !defined(KOKKOS_ENABLE_HIP) || (HIP_VERSION_MAJOR != 5) || \
-    ((HIP_VERSION_MAJOR == 5) &&                               \
-     !((HIP_VERSION_MINOR == 5) || (HIP_VERSION_MINOR == 6)))
     for (int i = 0; i < N; i++) {
       EXPECT_LE(Kokkos::abs(h_cbi0(i) - h_ref_cbi0(i)),
                 Kokkos::abs(h_ref_cbi0(i)) * 1e-13);
     }
 
     EXPECT_EQ(h_ref_cbk0(0), h_cbk0(0));
-    int upper_limit = N;
-    // FIXME_SYCL Failing for Intel GPUs, 19 is the first failing test case
-#if defined(KOKKOS_ENABLE_SYCL) && defined(KOKKOS_ARCH_INTEL_GPU)
-    if (std::is_same_v<TEST_EXECSPACE, Kokkos::Experimental::SYCL>)
-      upper_limit = 19;
-#endif
-    for (int i = 1; i < upper_limit; i++) {
+    for (int i = 1; i < N; i++) {
       EXPECT_LE(Kokkos::abs(h_cbk0(i) - h_ref_cbk0(i)),
-                Kokkos::abs(h_ref_cbk0(i)) * 1e-13)
-          << "at index " << i;
+                Kokkos::abs(h_ref_cbk0(i)) * 1e-13);
     }
-#endif
 
     ////Test large arguments
     d_z_large        = ViewType("d_z_large", 6);
@@ -1242,8 +1189,8 @@ struct TestComplexBesselI0K0Function {
 
     Kokkos::deep_copy(d_z_large, h_z_large);
 
-    Kokkos::parallel_for(
-        Kokkos::RangePolicy<ExecSpace, Property, TestLargeArgTag>(0, 1), *this);
+    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace, TestLargeArgTag>(0, 1),
+                         *this);
     Kokkos::fence();
 
     Kokkos::deep_copy(h_cbi0_large, d_cbi0_large);
@@ -1355,13 +1302,7 @@ struct TestComplexBesselI1K1Function {
     Kokkos::deep_copy(d_z, h_z);
 
     // Call Bessel functions
-#if (HIP_VERSION_MAJOR == 5) && (HIP_VERSION_MINOR == 4)
-    using Property =
-        Kokkos::Experimental::WorkItemProperty::ImplForceGlobalLaunch_t;
-#else
-    using Property = Kokkos::Experimental::WorkItemProperty::None_t;
-#endif
-    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace, Property>(0, N), *this);
+    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0, N), *this);
     Kokkos::fence();
 
     Kokkos::deep_copy(h_cbi1, d_cbi1);
@@ -1462,16 +1403,9 @@ struct TestComplexBesselI1K1Function {
     }
 
     EXPECT_EQ(h_ref_cbk1(0), h_cbk1(0));
-    int upper_limit = N;
-    // FIXME_SYCL Failing for Intel GPUs, 8 is the first failing test case
-#if defined(KOKKOS_ENABLE_SYCL) && defined(KOKKOS_ARCH_INTEL_GPU)
-    if (std::is_same_v<TEST_EXECSPACE, Kokkos::Experimental::SYCL>)
-      upper_limit = 8;
-#endif
-    for (int i = 1; i < upper_limit; i++) {
+    for (int i = 1; i < N; i++) {
       EXPECT_LE(Kokkos::abs(h_cbk1(i) - h_ref_cbk1(i)),
-                Kokkos::abs(h_ref_cbk1(i)) * 1e-13)
-          << "at index " << i;
+                Kokkos::abs(h_ref_cbk1(i)) * 1e-13);
     }
 
     ////Test large arguments
@@ -1490,8 +1424,8 @@ struct TestComplexBesselI1K1Function {
 
     Kokkos::deep_copy(d_z_large, h_z_large);
 
-    Kokkos::parallel_for(
-        Kokkos::RangePolicy<ExecSpace, Property, TestLargeArgTag>(0, 1), *this);
+    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace, TestLargeArgTag>(0, 1),
+                         *this);
     Kokkos::fence();
 
     Kokkos::deep_copy(h_cbi1_large, d_cbi1_large);
@@ -1599,13 +1533,7 @@ struct TestComplexBesselH1Function {
     Kokkos::deep_copy(d_z, h_z);
 
     // Call Hankel functions
-#if (HIP_VERSION_MAJOR == 5) && (HIP_VERSION_MINOR == 4)
-    using Property =
-        Kokkos::Experimental::WorkItemProperty::ImplForceGlobalLaunch_t;
-#else
-    using Property = Kokkos::Experimental::WorkItemProperty::None_t;
-#endif
-    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace, Property>(0, N), *this);
+    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0, N), *this);
     Kokkos::fence();
 
     Kokkos::deep_copy(h_ch10, d_ch10);
@@ -1712,11 +1640,6 @@ struct TestComplexBesselH1Function {
     h_ref_ch11(24) =
         Kokkos::complex<double>(-5.430453818237824e-02, -1.530182458039000e-02);
 
-    // FIXME_HIP Disable the test when using ROCm 5.5 and 5.6 due to a known
-    // compiler bug
-#if !defined(KOKKOS_ENABLE_HIP) || (HIP_VERSION_MAJOR != 5) || \
-    ((HIP_VERSION_MAJOR == 5) &&                               \
-     !((HIP_VERSION_MINOR == 5) || (HIP_VERSION_MINOR == 6)))
     EXPECT_EQ(h_ref_ch10(0), h_ch10(0));
     for (int i = 1; i < N; i++) {
       EXPECT_LE(Kokkos::abs(h_ch10(i) - h_ref_ch10(i)),
@@ -1725,18 +1648,11 @@ struct TestComplexBesselH1Function {
     }
 
     EXPECT_EQ(h_ref_ch11(0), h_ch11(0));
-    int upper_limit = N;
-    // FIXME_SYCL Failing for Intel GPUs, 16 is the first failing test case
-#if defined(KOKKOS_ENABLE_SYCL) && defined(KOKKOS_ARCH_INTEL_GPU)
-    if (std::is_same_v<TEST_EXECSPACE, Kokkos::Experimental::SYCL>)
-      upper_limit = 16;
-#endif
-    for (int i = 1; i < upper_limit; i++) {
+    for (int i = 1; i < N; i++) {
       EXPECT_LE(Kokkos::abs(h_ch11(i) - h_ref_ch11(i)),
                 Kokkos::abs(h_ref_ch11(i)) * 1e-13)
           << "at index " << i;
     }
-#endif
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -1906,11 +1822,6 @@ struct TestComplexBesselH2Function {
     h_ref_ch21(24) =
         Kokkos::complex<double>(1.629136145471347e-01, +1.530182458039000e-02);
 
-    // FIXME_HIP Disable the test when using ROCm 5.5 and 5.6 due to a known
-    // compiler bug
-#if !defined(KOKKOS_ENABLE_HIP) || (HIP_VERSION_MAJOR != 5) || \
-    ((HIP_VERSION_MAJOR == 5) &&                               \
-     !((HIP_VERSION_MINOR == 5) || (HIP_VERSION_MINOR == 6)))
     EXPECT_EQ(h_ref_ch20(0), h_ch20(0));
     for (int i = 1; i < N; i++) {
       EXPECT_LE(Kokkos::abs(h_ch20(i) - h_ref_ch20(i)),
@@ -1918,18 +1829,10 @@ struct TestComplexBesselH2Function {
     }
 
     EXPECT_EQ(h_ref_ch21(0), h_ch21(0));
-    int upper_limit = N;
-    // FIXME_SYCL Failing for Intel GPUs, 17 is the first failing test case
-#if defined(KOKKOS_ENABLE_SYCL) && defined(KOKKOS_ARCH_INTEL_GPU)
-    if (std::is_same_v<TEST_EXECSPACE, Kokkos::Experimental::SYCL>)
-      upper_limit = 17;
-#endif
-    for (int i = 1; i < upper_limit; i++) {
+    for (int i = 1; i < N; i++) {
       EXPECT_LE(Kokkos::abs(h_ch21(i) - h_ref_ch21(i)),
-                Kokkos::abs(h_ref_ch21(i)) * 1e-13)
-          << "at index " << i;
+                Kokkos::abs(h_ref_ch21(i)) * 1e-13);
     }
-#endif
   }
 
   KOKKOS_INLINE_FUNCTION

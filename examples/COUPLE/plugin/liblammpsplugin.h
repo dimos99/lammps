@@ -106,7 +106,7 @@ typedef void (*FixExternalFnPtr)(void *, int, int, int *, double **, double **);
 typedef void (*FixExternalFnPtr)(void *, int64_t, int, int *, double **, double **);
 #endif
 
-#define LAMMPSPLUGIN_ABI_VERSION 2
+#define LAMMPSPLUGIN_ABI_VERSION 1
 struct _liblammpsplugin {
   int abiversion;
   int has_exceptions;
@@ -127,7 +127,7 @@ struct _liblammpsplugin {
 
   void (*error)(void *, int, const char *);
 
-  void (*file)(void *, const char *);
+  void (*file)(void *, char *);
   char *(*command)(void *, const char *);
   void (*commands_list)(void *, int, const char **);
   void (*commands_string)(void *, const char *);
@@ -152,12 +152,9 @@ struct _liblammpsplugin {
 
   void *(*extract_compute)(void *, const char *, int, int);
   void *(*extract_fix)(void *, const char *, int, int, int, int);
-  void *(*extract_variable)(void *, const char *, const char *);
+  void *(*extract_variable)(void *, const char *, char *);
   int (*extract_variable_datatype)(void *, const char *);
-  int (*set_variable)(void *, const char *, const char *);
-  int (*set_string_variable)(void *, const char *, const char *);
-  int (*set_internal_variable)(void *, const char *, double);
-  int (*variable_info)(void *, int, char *, int);
+  int (*set_variable)(void *, char *, char *);
 
   void (*gather_atoms)(void *, const char *, int, int, void *);
   void (*gather_atoms_concat)(void *, const char *, int, int, void *);

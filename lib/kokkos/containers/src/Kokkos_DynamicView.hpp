@@ -1,18 +1,46 @@
+/*
 //@HEADER
 // ************************************************************************
 //
-//                        Kokkos v. 4.0
-//       Copyright (2022) National Technology & Engineering
+//                        Kokkos v. 3.0
+//       Copyright (2020) National Technology & Engineering
 //               Solutions of Sandia, LLC (NTESS).
 //
 // Under the terms of Contract DE-NA0003525 with NTESS,
 // the U.S. Government retains certain rights in this software.
 //
-// Part of Kokkos, under the Apache License v2.0 with LLVM Exceptions.
-// See https://kokkos.org/LICENSE for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
 //
+// 1. Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the Corporation nor the names of the
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY NTESS "AS IS" AND ANY
+// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL NTESS OR THE
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+// Questions? Contact Christian R. Trott (crtrott@sandia.gov)
+//
+// ************************************************************************
 //@HEADER
+*/
 
 #ifndef KOKKOS_DYNAMIC_VIEW_HPP
 #define KOKKOS_DYNAMIC_VIEW_HPP
@@ -507,7 +535,9 @@ class DynamicView : public Kokkos::ViewTraits<DataType, P...> {
     m_chunks = device_accessor(m_chunk_max, m_chunk_size);
 
     const std::string& label =
-        Kokkos::Impl::get_property<Kokkos::Impl::LabelTag>(arg_prop);
+        static_cast<Kokkos::Impl::ViewCtorProp<void, std::string> const&>(
+            arg_prop)
+            .value;
 
     if (device_accessor::template IsAccessibleFrom<host_space>::value) {
       m_chunks.template allocate_with_destroy<device_space>(label);
@@ -522,14 +552,17 @@ class DynamicView : public Kokkos::ViewTraits<DataType, P...> {
           label, m_chunks.get_ptr());
       m_chunks_host.initialize();
 
+      // Add some properties if not provided to avoid need for if constexpr
       using alloc_prop_input = Kokkos::Impl::ViewCtorProp<Prop...>;
+      using alloc_prop       = Kokkos::Impl::ViewCtorProp<
+          Prop..., std::conditional_t<alloc_prop_input::has_execution_space,
+                                      std::integral_constant<unsigned int, 15>,
+                                      typename device_space::execution_space>>;
+      alloc_prop arg_prop_copy(arg_prop);
 
-      auto arg_prop_copy = ::Kokkos::Impl::with_properties_if_unset(
-          arg_prop, typename device_space::execution_space{});
-
-      const auto& exec =
-          Kokkos::Impl::get_property<Kokkos::Impl::ExecutionSpaceTag>(
-              arg_prop_copy);
+      const auto& exec = static_cast<const Kokkos::Impl::ViewCtorProp<
+          void, typename alloc_prop::execution_space>&>(arg_prop_copy)
+                             .value;
       m_chunks_host.deep_copy_to(exec, m_chunks);
       if (!alloc_prop_input::has_execution_space)
         exec.fence(
@@ -552,9 +585,6 @@ struct is_dynamic_view : public std::false_type {};
 template <class D, class... P>
 struct is_dynamic_view<Kokkos::Experimental::DynamicView<D, P...>>
     : public std::true_type {};
-
-template <class T>
-inline constexpr bool is_dynamic_view_v = is_dynamic_view<T>::value;
 
 }  // namespace Kokkos
 
@@ -611,8 +641,10 @@ inline auto create_mirror(
       "The view constructor arguments passed to Kokkos::create_mirror must "
       "not explicitly allow padding!");
 
-  auto prop_copy = Impl::with_properties_if_unset(
-      arg_prop, std::string(src.label()).append("_mirror"));
+  using alloc_prop = Impl::ViewCtorProp<ViewCtorArgs..., std::string>;
+  alloc_prop prop_copy(arg_prop);
+  static_cast<Impl::ViewCtorProp<void, std::string>&>(prop_copy).value =
+      std::string(src.label()).append("_mirror");
 
   auto ret = typename Kokkos::Experimental::DynamicView<T, P...>::HostMirror(
       prop_copy, src.chunk_size(), src.chunk_max() * src.chunk_size());
@@ -644,8 +676,10 @@ inline auto create_mirror(
       "not explicitly allow padding!");
 
   using MemorySpace = typename alloc_prop_input::memory_space;
-  auto prop_copy    = Impl::with_properties_if_unset(
-      arg_prop, std::string(src.label()).append("_mirror"));
+  using alloc_prop  = Impl::ViewCtorProp<ViewCtorArgs..., std::string>;
+  alloc_prop prop_copy(arg_prop);
+  static_cast<Impl::ViewCtorProp<void, std::string>&>(prop_copy).value =
+      std::string(src.label()).append("_mirror");
 
   auto ret = typename Kokkos::Impl::MirrorDynamicViewType<
       MemorySpace, T, P...>::view_type(prop_copy, src.chunk_size(),
@@ -1041,18 +1075,31 @@ auto create_mirror_view_and_copy(
   using Mirror =
       typename Impl::MirrorDynamicViewType<Space, T, P...>::view_type;
 
-  auto arg_prop_copy = Impl::with_properties_if_unset(
-      arg_prop, std::string{}, WithoutInitializing,
-      typename Space::execution_space{});
+  // Add some properties if not provided to avoid need for if constexpr
+  using alloc_prop = Impl::ViewCtorProp<
+      ViewCtorArgs...,
+      std::conditional_t<alloc_prop_input::has_label,
+                         std::integral_constant<unsigned int, 12>, std::string>,
+      std::conditional_t<!alloc_prop_input::initialize,
+                         std::integral_constant<unsigned int, 13>,
+                         Impl::WithoutInitializing_t>,
+      std::conditional_t<alloc_prop_input::has_execution_space,
+                         std::integral_constant<unsigned int, 14>,
+                         typename Space::execution_space>>;
+  alloc_prop arg_prop_copy(arg_prop);
 
-  std::string& label = Impl::get_property<Impl::LabelTag>(arg_prop_copy);
+  std::string& label =
+      static_cast<Impl::ViewCtorProp<void, std::string>&>(arg_prop_copy).value;
   if (label.empty()) label = src.label();
   auto mirror = typename Mirror::non_const_type(
       arg_prop_copy, src.chunk_size(), src.chunk_max() * src.chunk_size());
   mirror.resize_serial(src.extent(0));
-  if constexpr (alloc_prop_input::has_execution_space) {
-    deep_copy(Impl::get_property<Impl::ExecutionSpaceTag>(arg_prop_copy),
-              mirror, src);
+  if (alloc_prop_input::has_execution_space) {
+    using ExecutionSpace = typename alloc_prop::execution_space;
+    deep_copy(
+        static_cast<Impl::ViewCtorProp<void, ExecutionSpace>&>(arg_prop_copy)
+            .value,
+        mirror, src);
   } else
     deep_copy(mirror, src);
   return mirror;

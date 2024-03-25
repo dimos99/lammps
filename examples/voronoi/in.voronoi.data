@@ -63,9 +63,11 @@ undump          dlocal
 # TEST 2: 
 #
 
-# This compute voronoi generates peratom and local and global quantities
+# This compute voronoi generates  
+# local and global quantities, but
+# not per-atom quantities
 
-compute 	v2 all voronoi/atom neighbors yes edge_histo 6
+compute 	v2 all voronoi/atom neighbors yes edge_histo 6 peratom no
 
 # write voronoi local quantities to a file
 
@@ -73,7 +75,7 @@ dump            d2 all local  1 dump.neighbors2 index c_v2[1] c_v2[2] c_v2[3]
 
 # sum up a voronoi local quantity
 
-compute 	sumarea all reduce sum c_v2[3] inputs local
+compute 	sumarea all reduce sum c_v2[3]
 
 # output voronoi global quantities
 
@@ -81,3 +83,6 @@ thermo_style 	custom c_sumarea c_v2[3] c_v2[4] c_v2[5] c_v2[6] c_v2[7]
 thermo 		1
 
 run  		0
+
+
+

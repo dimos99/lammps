@@ -40,7 +40,10 @@ public:
 private slots:
     void saveAs();
     void copy();
-    void quit();
+    void zoomIn();
+    void zoomOut();
+    void normalSize();
+    void fitToWindow();
 
     void edit_size();
     void reset_view();
@@ -88,7 +91,7 @@ private:
     int xsize, ysize;
     int hrot, vrot;
     double zoom, vdwfactor;
-    bool showbox, showaxes, antialias, usessao, useelements, usediameter;
+    bool showbox, showaxes, antialias, usessao, useelements;
 };
 #endif
 

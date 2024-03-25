@@ -68,7 +68,7 @@ reciprocal lattice nodes. The mesh spacing is defined either (a)  by
 the entire simulation domain or (b) manually using selected values as
 shown in the 2D diagram below.
 
-.. image:: img/saed_mesh.png
+.. image:: img/saed_mesh.jpg
    :scale: 75%
    :align: center
 

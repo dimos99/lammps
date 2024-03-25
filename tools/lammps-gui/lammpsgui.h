@@ -16,10 +16,8 @@
 
 #include <QMainWindow>
 
-#include <QGridLayout>
 #include <QList>
 #include <QPair>
-#include <QSpacerItem>
 #include <QString>
 #include <vector>
 
@@ -29,7 +27,6 @@
 
 class GeneralTab;
 class LammpsRunner;
-class LogWindow;
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -47,7 +44,6 @@ class StdCapture;
 class Preferences;
 class ImageViewer;
 class ChartWindow;
-class SlideShow;
 
 class LammpsGui : public QMainWindow {
     Q_OBJECT
@@ -64,13 +60,8 @@ protected:
     void write_file(const QString &filename);
     void update_recents(const QString &filename = "");
     void update_variables();
-    void do_run(bool use_buffer);
     void start_lammps();
     void run_done();
-
-public slots:
-    void quit();
-    void stop_run();
 
 private slots:
     void new_document();
@@ -79,21 +70,20 @@ private slots:
     void start_exe();
     void save();
     void save_as();
+    void quit();
     void copy();
     void cut();
     void paste();
     void undo();
     void redo();
-    void run_buffer() { do_run(true); }
-    void run_file() { do_run(false); }
-
+    void clear();
+    void run_buffer();
+    void stop_run();
     void edit_variables();
     void render_image();
-    void view_slides();
     void view_image();
     void view_chart();
     void view_log();
-    void view_variables();
     void about();
     void help();
     void manual();
@@ -110,16 +100,14 @@ private:
     Highlighter *highlighter;
     StdCapture *capturer;
     QLabel *status;
-    LogWindow *logwindow;
+    QPlainTextEdit *logwindow;
     ImageViewer *imagewindow;
     ChartWindow *chartwindow;
-    SlideShow *slideshow;
     QTimer *logupdater;
     QLabel *dirstatus;
     QProgressBar *progress;
     Preferences *prefdialog;
     QLabel *lammpsstatus;
-    QLabel *varwindow;
 
     QString current_file;
     QString current_dir;
@@ -130,7 +118,6 @@ private:
     LammpsRunner *runner;
     std::string plugin_path;
     bool is_running;
-    int run_counter;
     std::vector<char *> lammps_args;
 };
 #endif // LAMMPSGUI_H

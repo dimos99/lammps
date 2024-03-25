@@ -32,11 +32,10 @@ protected:
     {
         const char *args[] = {"LAMMPS_test", "-log",      "none",
                               "-echo",       "screen",    "-nocite",
-                              "-var",        "input_dir", STRINGIFY(TEST_INPUT_FOLDER),
-                              nullptr};
+                              "-var",        "input_dir", STRINGIFY(TEST_INPUT_FOLDER)};
 
         char **argv = (char **)args;
-        int argc    = (sizeof(args) / sizeof(char *)) - 1;
+        int argc    = sizeof(args) / sizeof(char *);
 
         ::testing::internal::CaptureStdout();
         lmp                = lammps_open_no_mpi(argc, argv, nullptr);

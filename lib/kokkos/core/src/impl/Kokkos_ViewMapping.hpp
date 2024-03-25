@@ -1,18 +1,46 @@
+/*
 //@HEADER
 // ************************************************************************
 //
-//                        Kokkos v. 4.0
-//       Copyright (2022) National Technology & Engineering
+//                        Kokkos v. 3.0
+//       Copyright (2020) National Technology & Engineering
 //               Solutions of Sandia, LLC (NTESS).
 //
 // Under the terms of Contract DE-NA0003525 with NTESS,
 // the U.S. Government retains certain rights in this software.
 //
-// Part of Kokkos, under the Apache License v2.0 with LLVM Exceptions.
-// See https://kokkos.org/LICENSE for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
 //
+// 1. Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the Corporation nor the names of the
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY NTESS "AS IS" AND ANY
+// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL NTESS OR THE
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+// Questions? Contact Christian R. Trott (crtrott@sandia.gov)
+//
+// ************************************************************************
 //@HEADER
+*/
 
 #ifndef KOKKOS_EXPERIMENTAL_VIEW_MAPPING_HPP
 #define KOKKOS_EXPERIMENTAL_VIEW_MAPPING_HPP
@@ -32,7 +60,6 @@
 #include <impl/Kokkos_Atomic_View.hpp>
 #include <impl/Kokkos_Tools.hpp>
 #include <impl/Kokkos_StringManipulation.hpp>
-#include <impl/Kokkos_ZeroMemset_fwd.hpp>
 
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
@@ -160,8 +187,8 @@ struct KOKKOS_IMPL_ENFORCE_EMPTY_BASE_OPTIMIZATION ViewDimension
   using D6::N6;
   using D7::N7;
 
-  static constexpr unsigned rank         = sizeof...(Vals);
-  static constexpr unsigned rank_dynamic = Impl::rank_dynamic<Vals...>::value;
+  enum : unsigned { rank = sizeof...(Vals) };
+  enum : unsigned { rank_dynamic = Impl::rank_dynamic<Vals...>::value };
 
   ViewDimension()                     = default;
   ViewDimension(const ViewDimension&) = default;
@@ -287,6 +314,7 @@ struct ViewDimensionAssignable<ViewDimension<DstArgs...>,
 //----------------------------------------------------------------------------
 
 namespace Kokkos {
+namespace Impl {
 
 struct ALL_t {
   KOKKOS_INLINE_FUNCTION
@@ -296,15 +324,7 @@ struct ALL_t {
   constexpr bool operator==(const ALL_t&) const { return true; }
 };
 
-#ifdef KOKKOS_ENABLE_DEPRECATED_CODE_4
-namespace Impl {
-// TODO This alias declaration forces us to fully qualify ALL_t inside the
-// Kokkos::Impl namespace to avoid deprecation warnings. Replace the
-// fully-qualified name when we remove Kokkos::Impl::ALL_t.
-using ALL_t KOKKOS_DEPRECATED_WITH_COMMENT("Use Kokkos::ALL_t instead!") =
-    Kokkos::ALL_t;
 }  // namespace Impl
-#endif
 }  // namespace Kokkos
 
 namespace Kokkos {
@@ -312,7 +332,7 @@ namespace Impl {
 
 template <class T>
 struct is_integral_extent_type {
-  enum : bool { value = std::is_same<T, Kokkos::ALL_t>::value ? 1 : 0 };
+  enum : bool { value = std::is_same<T, Kokkos::Impl::ALL_t>::value ? 1 : 0 };
 };
 
 template <class iType>
@@ -362,7 +382,7 @@ struct SubviewLegalArgsCompileTime<Kokkos::LayoutLeft, Kokkos::LayoutLeft,
               (Kokkos::Impl::is_integral_extent_type<Arg>::value)) ||
              ((CurrentArg >= RankDest) && (std::is_integral<Arg>::value)) ||
              ((CurrentArg < RankDest) &&
-              (std::is_same<Arg, Kokkos::ALL_t>::value)) ||
+              (std::is_same<Arg, Kokkos::Impl::ALL_t>::value)) ||
              ((CurrentArg == 0) &&
               (Kokkos::Impl::is_integral_extent_type<Arg>::value))) &&
             (SubviewLegalArgsCompileTime<Kokkos::LayoutLeft, Kokkos::LayoutLeft,
@@ -393,7 +413,7 @@ struct SubviewLegalArgsCompileTime<Kokkos::LayoutRight, Kokkos::LayoutRight,
              ((CurrentArg < RankSrc - RankDest) &&
               (std::is_integral<Arg>::value)) ||
              ((CurrentArg >= RankSrc - RankDest) &&
-              (std::is_same<Arg, Kokkos::ALL_t>::value))) &&
+              (std::is_same<Arg, Kokkos::Impl::ALL_t>::value))) &&
             (SubviewLegalArgsCompileTime<Kokkos::LayoutRight,
                                          Kokkos::LayoutRight, RankDest, RankSrc,
                                          CurrentArg + 1, SubViewArgs...>::value)
@@ -405,7 +425,7 @@ struct SubviewLegalArgsCompileTime<Kokkos::LayoutRight, Kokkos::LayoutRight,
                                    RankDest, RankSrc, CurrentArg, Arg> {
   enum {
     value = ((CurrentArg == RankSrc - 1) &&
-             (std::is_same<Arg, Kokkos::ALL_t>::value))
+             (std::is_same<Arg, Kokkos::Impl::ALL_t>::value))
   };
 };
 
@@ -471,7 +491,8 @@ struct SubviewExtents {
   KOKKOS_FORCEINLINE_FUNCTION bool set(unsigned domain_rank,
                                        unsigned range_rank,
                                        const ViewDimension<DimArgs...>& dim,
-                                       Kokkos::ALL_t, Args... args) {
+                                       const Kokkos::Impl::ALL_t,
+                                       Args... args) {
     m_begin[domain_rank] = 0;
     m_length[range_rank] = dim.extent(domain_rank);
     m_index[range_rank]  = domain_rank;
@@ -566,7 +587,7 @@ struct SubviewExtents {
   // std::pair range
   template <size_t... DimArgs, class... Args>
   void error(char* buf, int buf_len, unsigned domain_rank, unsigned range_rank,
-             const ViewDimension<DimArgs...>& dim, Kokkos::ALL_t,
+             const ViewDimension<DimArgs...>& dim, const Kokkos::Impl::ALL_t,
              Args... args) const {
     const int n = std::min(buf_len, snprintf(buf, buf_len, " Kokkos::ALL %c",
                                              int(sizeof...(Args) ? ',' : ')')));
@@ -2190,8 +2211,7 @@ struct ViewStride;
 
 template <>
 struct ViewStride<0> {
-  static constexpr size_t S0 = 0, S1 = 0, S2 = 0, S3 = 0, S4 = 0, S5 = 0,
-                          S6 = 0, S7 = 0;
+  enum { S0 = 0, S1 = 0, S2 = 0, S3 = 0, S4 = 0, S5 = 0, S6 = 0, S7 = 0 };
 
   ViewStride()                  = default;
   ViewStride(const ViewStride&) = default;
@@ -2205,8 +2225,7 @@ struct ViewStride<0> {
 template <>
 struct ViewStride<1> {
   size_t S0;
-  static constexpr size_t S1 = 0, S2 = 0, S3 = 0, S4 = 0, S5 = 0, S6 = 0,
-                          S7 = 0;
+  enum { S1 = 0, S2 = 0, S3 = 0, S4 = 0, S5 = 0, S6 = 0, S7 = 0 };
 
   ViewStride()                  = default;
   ViewStride(const ViewStride&) = default;
@@ -2221,7 +2240,7 @@ struct ViewStride<1> {
 template <>
 struct ViewStride<2> {
   size_t S0, S1;
-  static constexpr size_t S2 = 0, S3 = 0, S4 = 0, S5 = 0, S6 = 0, S7 = 0;
+  enum { S2 = 0, S3 = 0, S4 = 0, S5 = 0, S6 = 0, S7 = 0 };
 
   ViewStride()                  = default;
   ViewStride(const ViewStride&) = default;
@@ -2236,7 +2255,7 @@ struct ViewStride<2> {
 template <>
 struct ViewStride<3> {
   size_t S0, S1, S2;
-  static constexpr size_t S3 = 0, S4 = 0, S5 = 0, S6 = 0, S7 = 0;
+  enum { S3 = 0, S4 = 0, S5 = 0, S6 = 0, S7 = 0 };
 
   ViewStride()                  = default;
   ViewStride(const ViewStride&) = default;
@@ -2251,7 +2270,7 @@ struct ViewStride<3> {
 template <>
 struct ViewStride<4> {
   size_t S0, S1, S2, S3;
-  static constexpr size_t S4 = 0, S5 = 0, S6 = 0, S7 = 0;
+  enum { S4 = 0, S5 = 0, S6 = 0, S7 = 0 };
 
   ViewStride()                  = default;
   ViewStride(const ViewStride&) = default;
@@ -2266,7 +2285,7 @@ struct ViewStride<4> {
 template <>
 struct ViewStride<5> {
   size_t S0, S1, S2, S3, S4;
-  static constexpr size_t S5 = 0, S6 = 0, S7 = 0;
+  enum { S5 = 0, S6 = 0, S7 = 0 };
 
   ViewStride()                  = default;
   ViewStride(const ViewStride&) = default;
@@ -2281,7 +2300,7 @@ struct ViewStride<5> {
 template <>
 struct ViewStride<6> {
   size_t S0, S1, S2, S3, S4, S5;
-  static constexpr size_t S6 = 0, S7 = 0;
+  enum { S6 = 0, S7 = 0 };
 
   ViewStride()                  = default;
   ViewStride(const ViewStride&) = default;
@@ -2296,7 +2315,7 @@ struct ViewStride<6> {
 template <>
 struct ViewStride<7> {
   size_t S0, S1, S2, S3, S4, S5, S6;
-  static constexpr size_t S7 = 0;
+  enum { S7 = 0 };
 
   ViewStride()                  = default;
   ViewStride(const ViewStride&) = default;
@@ -2716,8 +2735,14 @@ struct ViewDataHandle<
     Traits,
     std::enable_if_t<(std::is_void<typename Traits::specialize>::value &&
                       (!Traits::memory_traits::is_aligned) &&
-                      Traits::memory_traits::is_restrict &&
-                      (!Traits::memory_traits::is_atomic))>> {
+                      Traits::memory_traits::is_restrict
+#ifdef KOKKOS_ENABLE_CUDA
+                      && (!(std::is_same<typename Traits::memory_space,
+                                         Kokkos::CudaSpace>::value ||
+                            std::is_same<typename Traits::memory_space,
+                                         Kokkos::CudaUVMSpace>::value))
+#endif
+                      && (!Traits::memory_traits::is_atomic))>> {
   using value_type  = typename Traits::value_type;
   using handle_type = typename Traits::value_type* KOKKOS_RESTRICT;
   using return_type = typename Traits::value_type& KOKKOS_RESTRICT;
@@ -2740,8 +2765,14 @@ struct ViewDataHandle<
     Traits,
     std::enable_if_t<(std::is_void<typename Traits::specialize>::value &&
                       Traits::memory_traits::is_aligned &&
-                      (!Traits::memory_traits::is_restrict) &&
-                      (!Traits::memory_traits::is_atomic))>> {
+                      (!Traits::memory_traits::is_restrict)
+#ifdef KOKKOS_ENABLE_CUDA
+                      && (!(std::is_same<typename Traits::memory_space,
+                                         Kokkos::CudaSpace>::value ||
+                            std::is_same<typename Traits::memory_space,
+                                         Kokkos::CudaUVMSpace>::value))
+#endif
+                      && (!Traits::memory_traits::is_atomic))>> {
   using value_type = typename Traits::value_type;
   // typedef work-around for intel compilers error #3186: expected typedef
   // declaration
@@ -2779,8 +2810,14 @@ struct ViewDataHandle<
     Traits,
     std::enable_if_t<(std::is_void<typename Traits::specialize>::value &&
                       Traits::memory_traits::is_aligned &&
-                      Traits::memory_traits::is_restrict &&
-                      (!Traits::memory_traits::is_atomic))>> {
+                      Traits::memory_traits::is_restrict
+#ifdef KOKKOS_ENABLE_CUDA
+                      && (!(std::is_same<typename Traits::memory_space,
+                                         Kokkos::CudaSpace>::value ||
+                            std::is_same<typename Traits::memory_space,
+                                         Kokkos::CudaUVMSpace>::value))
+#endif
+                      && (!Traits::memory_traits::is_atomic))>> {
   using value_type = typename Traits::value_type;
   // typedef work-around for intel compilers error #3186: expected typedef
   // declaration
@@ -2853,27 +2890,25 @@ struct ViewValueFunctor;
 
 template <class DeviceType, class ValueType>
 struct ViewValueFunctor<DeviceType, ValueType, false /* is_scalar */> {
-  using ExecSpace = typename DeviceType::execution_space;
-
-  struct DestroyTag {};
-  struct ConstructTag {};
+  using ExecSpace  = typename DeviceType::execution_space;
+  using PolicyType = Kokkos::RangePolicy<ExecSpace, Kokkos::IndexType<int64_t>>;
 
   ExecSpace space;
   ValueType* ptr;
   size_t n;
+  bool destroy;
   std::string name;
   bool default_exec_space;
 
-  template <class _ValueType = ValueType>
   KOKKOS_INLINE_FUNCTION
-      std::enable_if_t<std::is_default_constructible<_ValueType>::value>
-      operator()(ConstructTag const&, const size_t i) const {
-    new (ptr + i) ValueType();
-  }
-
-  KOKKOS_INLINE_FUNCTION void operator()(DestroyTag const&,
-                                         const size_t i) const {
-    (ptr + i)->~ValueType();
+  void operator()(const size_t i) const {
+    if (destroy) {
+      (ptr + i)->~ValueType();
+    }  // KOKKOS_IMPL_CUDA_CLANG_WORKAROUND this line causes ptax error
+       // __cxa_begin_catch in nested_view unit-test
+    else {
+      new (ptr + i) ValueType();
+    }
   }
 
   ViewValueFunctor()                        = default;
@@ -2885,20 +2920,18 @@ struct ViewValueFunctor<DeviceType, ValueType, false /* is_scalar */> {
       : space(arg_space),
         ptr(arg_ptr),
         n(arg_n),
+        destroy(false),
         name(std::move(arg_name)),
-        default_exec_space(false) {
-    functor_instantiate_workaround();
-  }
+        default_exec_space(false) {}
 
   ViewValueFunctor(ValueType* const arg_ptr, size_t const arg_n,
                    std::string arg_name)
       : space(ExecSpace{}),
         ptr(arg_ptr),
         n(arg_n),
+        destroy(false),
         name(std::move(arg_name)),
-        default_exec_space(true) {
-    functor_instantiate_workaround();
-  }
+        default_exec_space(true) {}
 
   template <typename Dummy = ValueType>
   std::enable_if_t<std::is_trivial<Dummy>::value &&
@@ -2919,9 +2952,8 @@ struct ViewValueFunctor<DeviceType, ValueType, false /* is_scalar */> {
             "Kokkos::View::initialization [" + name + "] via memset",
             Kokkos::Profiling::Experimental::device_id(space), &kpID);
       }
-      (void)ZeroMemset<
-          ExecSpace, Kokkos::View<ValueType*, typename DeviceType::memory_space,
-                                  Kokkos::MemoryTraits<Kokkos::Unmanaged>>>(
+      (void)ZeroMemset<ExecSpace, ValueType*, typename DeviceType::memory_space,
+                       Kokkos::MemoryTraits<Kokkos::Unmanaged>>(
           space,
           Kokkos::View<ValueType*, typename DeviceType::memory_space,
                        Kokkos::MemoryTraits<Kokkos::Unmanaged>>(ptr, n),
@@ -2934,7 +2966,7 @@ struct ViewValueFunctor<DeviceType, ValueType, false /* is_scalar */> {
         space.fence("Kokkos::Impl::ViewValueFunctor: View init/destroy fence");
     } else {
 #endif
-      parallel_for_implementation<ConstructTag>();
+      parallel_for_implementation(false);
 #ifndef KOKKOS_ARCH_A64FX
     }
 #endif
@@ -2944,24 +2976,22 @@ struct ViewValueFunctor<DeviceType, ValueType, false /* is_scalar */> {
   std::enable_if_t<!(std::is_trivial<Dummy>::value &&
                      std::is_trivially_copy_assignable<ValueType>::value)>
   construct_dispatch() {
-    parallel_for_implementation<ConstructTag>();
+    parallel_for_implementation(false);
   }
 
-  template <typename Tag>
-  void parallel_for_implementation() {
+  void parallel_for_implementation(bool arg) {
+    destroy = arg;
     if (!space.in_parallel()) {
-      using PolicyType =
-          Kokkos::RangePolicy<ExecSpace, Kokkos::IndexType<int64_t>, Tag>;
-      PolicyType policy(space, 0, n);
+      PolicyType policy(0, n);
+      std::string functor_name;
       uint64_t kpID = 0;
       if (Kokkos::Profiling::profileLibraryLoaded()) {
-        const std::string functor_name =
-            (std::is_same_v<Tag, DestroyTag>
-                 ? "Kokkos::View::destruction [" + name + "]"
-                 : "Kokkos::View::initialization [" + name + "]");
+        functor_name =
+            (destroy ? "Kokkos::View::destruction [" + functor_name + "]"
+                     : "Kokkos::View::initialization [" + functor_name + "]");
         Kokkos::Profiling::beginParallelFor(
-            functor_name, Kokkos::Profiling::Experimental::device_id(space),
-            &kpID);
+            "Kokkos::View::initialization [" + functor_name + "]",
+            Kokkos::Profiling::Experimental::device_id(space), &kpID);
       }
 
 #ifdef KOKKOS_ENABLE_CUDA
@@ -2973,33 +3003,19 @@ struct ViewValueFunctor<DeviceType, ValueType, false /* is_scalar */> {
       const Kokkos::Impl::ParallelFor<ViewValueFunctor, PolicyType> closure(
           *this, policy);
       closure.execute();
-      if (default_exec_space || std::is_same_v<Tag, DestroyTag>)
+      if (default_exec_space || destroy)
         space.fence("Kokkos::Impl::ViewValueFunctor: View init/destroy fence");
       if (Kokkos::Profiling::profileLibraryLoaded()) {
         Kokkos::Profiling::endParallelFor(kpID);
       }
     } else {
-      for (size_t i = 0; i < n; ++i) operator()(Tag{}, i);
+      for (size_t i = 0; i < n; ++i) operator()(i);
     }
   }
 
   void construct_shared_allocation() { construct_dispatch(); }
 
-  void destroy_shared_allocation() {
-    parallel_for_implementation<DestroyTag>();
-  }
-
-  // This function is to ensure that the functor with DestroyTag is instantiated
-  // This is a workaround to avoid "cudaErrorInvalidDeviceFunction" error later
-  // when the function is queried with cudaFuncGetAttributes
-  void functor_instantiate_workaround() {
-#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP) || \
-    defined(KOKKOS_ENABLE_SYCL) || defined(KOKKOS_ENABLE_OPENMPTARGET)
-    if (false) {
-      parallel_for_implementation<DestroyTag>();
-    }
-#endif
-  }
+  void destroy_shared_allocation() { parallel_for_implementation(true); }
 };
 
 template <class DeviceType, class ValueType>
@@ -3057,9 +3073,8 @@ struct ViewValueFunctor<DeviceType, ValueType, true /* is_scalar */> {
             Kokkos::Profiling::Experimental::device_id(space), &kpID);
       }
 
-      (void)ZeroMemset<
-          ExecSpace, Kokkos::View<ValueType*, typename DeviceType::memory_space,
-                                  Kokkos::MemoryTraits<Kokkos::Unmanaged>>>(
+      (void)ZeroMemset<ExecSpace, ValueType*, typename DeviceType::memory_space,
+                       Kokkos::MemoryTraits<Kokkos::Unmanaged>>(
           space,
           Kokkos::View<ValueType*, typename DeviceType::memory_space,
                        Kokkos::MemoryTraits<Kokkos::Unmanaged>>(ptr, n),
@@ -3088,7 +3103,8 @@ struct ViewValueFunctor<DeviceType, ValueType, true /* is_scalar */> {
   void parallel_for_implementation() {
     if (!space.in_parallel()) {
       PolicyType policy(0, n);
-      uint64_t kpID = 0;
+      std::string functor_name = "Kokkos::View::initialization [" + name + "]";
+      uint64_t kpID            = 0;
       if (Kokkos::Profiling::profileLibraryLoaded()) {
         Kokkos::Profiling::beginParallelFor(
             "Kokkos::View::initialization [" + name + "]",
@@ -3151,7 +3167,7 @@ class ViewMapping<
   //----------------------------------------
   // Domain dimensions
 
-  static constexpr unsigned Rank = Traits::dimension::rank;
+  enum { Rank = Traits::dimension::rank };
 
   template <typename iType>
   KOKKOS_INLINE_FUNCTION constexpr size_t extent(const iType& r) const {
@@ -3376,7 +3392,9 @@ class ViewMapping<
   KOKKOS_INLINE_FUNCTION ViewMapping(
       Kokkos::Impl::ViewCtorProp<P...> const& arg_prop,
       typename Traits::array_layout const& arg_layout)
-      : m_impl_handle(Impl::get_property<Impl::PointerTag>(arg_prop)),
+      : m_impl_handle(
+            ((Kokkos::Impl::ViewCtorProp<void, pointer_type> const&)arg_prop)
+                .value),
         m_impl_offset(std::integral_constant<unsigned, 0>(), arg_layout) {}
 
   /**\brief  Assign data */
@@ -3399,9 +3417,7 @@ class ViewMapping<
 
     using execution_space = typename alloc_prop::execution_space;
     using memory_space    = typename Traits::memory_space;
-    static_assert(
-        SpaceAccessibility<execution_space, memory_space>::accessible);
-    using value_type = typename Traits::value_type;
+    using value_type      = typename Traits::value_type;
     using functor_type =
         ViewValueFunctor<Kokkos::Device<execution_space, memory_space>,
                          value_type>;
@@ -3420,11 +3436,17 @@ class ViewMapping<
         (m_impl_offset.span() * MemorySpanSize + MemorySpanMask) &
         ~size_t(MemorySpanMask);
     const std::string& alloc_name =
-        Impl::get_property<Impl::LabelTag>(arg_prop);
+        static_cast<Kokkos::Impl::ViewCtorProp<void, std::string> const&>(
+            arg_prop)
+            .value;
     const execution_space& exec_space =
-        Impl::get_property<Impl::ExecutionSpaceTag>(arg_prop);
+        static_cast<Kokkos::Impl::ViewCtorProp<void, execution_space> const&>(
+            arg_prop)
+            .value;
     const memory_space& mem_space =
-        Impl::get_property<Impl::MemorySpaceTag>(arg_prop);
+        static_cast<Kokkos::Impl::ViewCtorProp<void, memory_space> const&>(
+            arg_prop)
+            .value;
 
     // Create shared memory tracking record with allocate memory from the memory
     // space
@@ -3436,25 +3458,22 @@ class ViewMapping<
 
     m_impl_handle = handle_type(reinterpret_cast<pointer_type>(record->data()));
 
-    functor_type functor =
-        execution_space_specified
-            ? functor_type(exec_space, (value_type*)m_impl_handle,
-                           m_impl_offset.span(), alloc_name)
-            : functor_type((value_type*)m_impl_handle, m_impl_offset.span(),
-                           alloc_name);
-
     //  Only initialize if the allocation is non-zero.
     //  May be zero if one of the dimensions is zero.
-    if constexpr (alloc_prop::initialize)
-      if (alloc_size) {
-        // Assume destruction is only required when construction is requested.
-        // The ViewValueFunctor has both value construction and destruction
-        // operators.
-        record->m_destroy = std::move(functor);
+    if (alloc_size && alloc_prop::initialize) {
+      // Assume destruction is only required when construction is requested.
+      // The ViewValueFunctor has both value construction and destruction
+      // operators.
+      record->m_destroy =
+          execution_space_specified
+              ? functor_type(exec_space, (value_type*)m_impl_handle,
+                             m_impl_offset.span(), alloc_name)
+              : functor_type((value_type*)m_impl_handle, m_impl_offset.span(),
+                             alloc_name);
 
-        // Construct values
-        record->m_destroy.construct_shared_allocation();
-      }
+      // Construct values
+      record->m_destroy.construct_shared_allocation();
+    }
 
     return record;
   }
@@ -3667,7 +3686,7 @@ class ViewMapping<
     size_t exp_stride = 1;
     if (std::is_same<typename DstTraits::array_layout,
                      Kokkos::LayoutLeft>::value) {
-      for (int i = 0; i < (int)src.Rank; i++) {
+      for (int i = 0; i < src.Rank; i++) {
         if (i > 0) exp_stride *= src.extent(i - 1);
         if (strides[i] != exp_stride) {
           assignable = false;
@@ -3676,9 +3695,9 @@ class ViewMapping<
       }
     } else if (std::is_same<typename DstTraits::array_layout,
                             Kokkos::LayoutRight>::value) {
-      for (int i = 0; i < (int)src.Rank; i++) {
-        if (i > 0) exp_stride *= src.extent(src.Rank - i);
-        if (strides[src.Rank - 1 - i] != exp_stride) {
+      for (int i = src.Rank - 1; i >= 0; i--) {
+        if (i < src.Rank - 1) exp_stride *= src.extent(i + 1);
+        if (strides[i] != exp_stride) {
           assignable = false;
           break;
         }
@@ -3779,8 +3798,8 @@ struct SubViewDataTypeImpl<
 /* for ALL slice, subview has the same dimension */
 template <class ValueType, ptrdiff_t Ext, ptrdiff_t... Exts, class... Args>
 struct SubViewDataTypeImpl<void, ValueType,
-                           Kokkos::Experimental::Extents<Ext, Exts...>,
-                           Kokkos::ALL_t, Args...>
+                           Kokkos::Experimental::Extents<Ext, Exts...>, ALL_t,
+                           Args...>
     : SubViewDataTypeImpl<void, typename ApplyExtent<ValueType, Ext>::type,
                           Kokkos::Experimental::Extents<Exts...>, Args...> {};
 
